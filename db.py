@@ -15,12 +15,12 @@ def get_connection():
 # FUNCIONES PARA GESTIONAR USUARIOS ------------------------------
 
 # Registrar usuario
-def registrar_usuario(nombre, contraseña):
+def registrar_usuario(nombre, contraseña, rol_id):
     conn = get_connection()
     cursor = conn.cursor()
     hashed = bcrypt.hashpw(contraseña.encode('utf-8'), bcrypt.gensalt())
-    query = "INSERT INTO usuarios (nombre, password) VALUES (%s, %s)"
-    cursor.execute(query, (nombre, hashed))
+    query = "INSERT INTO USUARIO (usuario, contraseña, rol) VALUES (%s, %s, %s)"
+    cursor.execute(query, (nombre, hashed.decode('utf-8'), rol_id))
     conn.commit()
     conn.close()
 
