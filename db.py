@@ -19,7 +19,7 @@ def registrar_usuario(nombre, contraseña, rol_id):
     conn = get_connection()
     cursor = conn.cursor()
     hashed = bcrypt.hashpw(contraseña.encode('utf-8'), bcrypt.gensalt())
-    query = "INSERT INTO USUARIO (usuario, contraseña, rol) VALUES (%s, %s, %s)"
+    query = "INSERT INTO USUARIO (usuario, password, rol) VALUES (%s, %s, %s)"
     cursor.execute(query, (nombre, hashed.decode('utf-8'), rol_id))
     conn.commit()
     conn.close()
@@ -28,7 +28,7 @@ def registrar_usuario(nombre, contraseña, rol_id):
 def verificar_usuario(nombre, contraseña):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT password FROM usuarios WHERE nombre=%s", (nombre,))
+    cursor.execute("SELECT password FROM usuario WHERE usuario=%s", (nombre,))
     result = cursor.fetchone()
     conn.close()
     if result and bcrypt.checkpw(contraseña.encode('utf-8'), result[0].encode('utf-8')):
