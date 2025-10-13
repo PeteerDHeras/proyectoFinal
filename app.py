@@ -8,4 +8,5 @@ if(verificar_usuario("dmin", "admin")):
     print("Usuario verificado")
 else:
     print("Usuario no verificado")
+    
 prueba.close()
