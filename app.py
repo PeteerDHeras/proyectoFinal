@@ -1,92 +1,152 @@
-from flask import Flask, request, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, session
 from db import *
 
 app = Flask(__name__)
-app.secret_key = 'clave_secreta_segura'  # Cambia esto en producción
+app.secret_key = 'clave_secreta_segura'
+
+# ------------------ INICIO ------------------
+
+@app.route('/')
+def home():
+    return render_template('base.html')
 
 # ------------------ AUTENTICACIÓN ------------------
 
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    data = request.json
-    if verificar_usuario(data['usuario'], data['password']):
-        session['usuario'] = data['usuario']
-        return jsonify({'mensaje': 'Login correcto'})
-    return jsonify({'error': 'Credenciales inválidas'}), 401
+    if request.method == 'POST':
+        usuario = request.form['usuario']
+        password = request.form['password']
+        if verificar_usuario(usuario, password):
+            session['usuario'] = usuario
+            return redirect(url_for('dashboard'))
+        return render_template('login.html', error='Credenciales inválidas')
+    return render_template('login.html')
 
-@app.route('/logout', methods=['POST'])
+@app.route('/logout')
 def logout():
     session.pop('usuario', None)
-    return jsonify({'mensaje': 'Logout exitoso'})
+    return redirect(url_for('home'))
+
+@app.route('/dashboard')
+def dashboard():
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
+    return render_template('dashboard.html')
 
 # ------------------ TAREAS ------------------
 
-@app.route('/tareas', methods=['GET'])
-def listar_tareas():
-    return jsonify(obtener_tareas())
+@app.route('/tareas')
+def ver_tareas():
+    tareas = obtener_tareas()
+    return render_template('tareas.html', tareas=tareas)
 
-@app.route('/tareas', methods=['POST'])
-def nueva_tarea():
-    data = request.json
-    crear_tarea(data['nombre'], data['descripcion'], data['fecha_limite'], data['prioridad'], data['creador_id'])
-    return jsonify({'mensaje': 'Tarea creada'})
+@app.route('/tareas/nueva', methods=['GET', 'POST'])
+def crear_tarea_view():
+    if request.method == 'POST':
+        crear_tarea(
+            request.form['nombre'],
+            request.form['descripcion'],
+            request.form['fecha_limite'],
+            request.form['prioridad'],
+            1  # creador_id fijo por ahora
+        )
+        return redirect(url_for('ver_tareas'))
+    return render_template('nueva_tarea.html')
 
-@app.route('/tareas/<int:id>', methods=['PUT'])
-def editar_tarea(id):
-    data = request.json
-    modificar_tarea(id, data['nombre'], data['descripcion'], data['fecha_limite'], data['prioridad'])
-    return jsonify({'mensaje': 'Tarea modificada'})
+@app.route('/tareas/<int:id>/editar', methods=['GET', 'POST'])
+def editar_tarea_view(id):
+    tarea = next((t for t in obtener_tareas() if t['ID'] == id), None)
+    if request.method == 'POST':
+        modificar_tarea(
+            id,
+            request.form['nombre'],
+            request.form['descripcion'],
+            request.form['fecha_limite'],
+            request.form['prioridad']
+        )
+        return redirect(url_for('ver_tareas'))
+    return render_template('editar_tarea.html', tarea=tarea)
 
-@app.route('/tareas/<int:id>', methods=['DELETE'])
-def borrar_tarea(id):
+@app.route('/tareas/<int:id>/eliminar', methods=['POST'])
+def eliminar_tarea_view(id):
     eliminar_tarea(id)
-    return jsonify({'mensaje': 'Tarea eliminada'})
+    return redirect(url_for('ver_tareas'))
 
 # ------------------ EVENTOS ------------------
 
-@app.route('/eventos', methods=['GET'])
-def listar_eventos():
-    return jsonify(obtener_eventos())
+@app.route('/eventos')
+def ver_eventos():
+    eventos = obtener_eventos()
+    return render_template('eventos.html', eventos=eventos)
 
-@app.route('/eventos', methods=['POST'])
-def nuevo_evento():
-    data = request.json
-    crear_evento(data['nombre'], data['fecha_evento'], data['hora_evento'], data['creador_id'])
-    return jsonify({'mensaje': 'Evento creado'})
+@app.route('/eventos/nuevo', methods=['GET', 'POST'])
+def crear_evento_view():
+    if request.method == 'POST':
+        crear_evento(
+            request.form['nombre'],
+            request.form['fecha_evento'],
+            request.form['hora_evento'],
+            1
+        )
+        return redirect(url_for('ver_eventos'))
+    return render_template('nuevo_evento.html')
 
-@app.route('/eventos/<int:id>', methods=['PUT'])
-def editar_evento(id):
-    data = request.json
-    modificar_evento(id, data['nombre'], data['fecha_evento'], data['hora_evento'])
-    return jsonify({'mensaje': 'Evento modificado'})
+@app.route('/eventos/<int:id>/editar', methods=['GET', 'POST'])
+def editar_evento_view(id):
+    evento = next((e for e in obtener_eventos() if e['ID'] == id), None)
+    if request.method == 'POST':
+        modificar_evento(
+            id,
+            request.form['nombre'],
+            request.form['fecha_evento'],
+            request.form['hora_evento']
+        )
+        return redirect(url_for('ver_eventos'))
+    return render_template('editar_evento.html', evento=evento)
 
-@app.route('/eventos/<int:id>', methods=['DELETE'])
-def borrar_evento(id):
+@app.route('/eventos/<int:id>/eliminar', methods=['POST'])
+def eliminar_evento_view(id):
     eliminar_evento(id)
-    return jsonify({'mensaje': 'Evento eliminado'})
+    return redirect(url_for('ver_eventos'))
 
 # ------------------ SUBTAREAS ------------------
 
-@app.route('/subtareas', methods=['GET'])
-def listar_subtareas():
-    return jsonify(obtener_subtareas())
+@app.route('/subtareas')
+def ver_subtareas():
+    subtareas = obtener_subtareas()
+    return render_template('subtareas.html', subtareas=subtareas)
 
-@app.route('/subtareas', methods=['POST'])
-def nueva_subtarea():
-    data = request.json
-    crear_subtarea(data['nombre'], data['descripcion'], data['fecha_limite'], data['tarea_padre_id'], data['creador_id'])
-    return jsonify({'mensaje': 'Subtarea creada'})
+@app.route('/subtareas/nueva', methods=['GET', 'POST'])
+def crear_subtarea_view():
+    if request.method == 'POST':
+        crear_subtarea(
+            request.form['nombre'],
+            request.form['descripcion'],
+            request.form['fecha_limite'],
+            request.form['tarea_padre_id'],
+            1
+        )
+        return redirect(url_for('ver_subtareas'))
+    return render_template('nueva_subtarea.html')
 
-@app.route('/subtareas/<int:id>', methods=['PUT'])
-def editar_subtarea(id):
-    data = request.json
-    modificar_subtarea(id, data['nombre'], data['descripcion'], data['fecha_limite'])
-    return jsonify({'mensaje': 'Subtarea modificada'})
+@app.route('/subtareas/<int:id>/editar', methods=['GET', 'POST'])
+def editar_subtarea_view(id):
+    subtarea = next((s for s in obtener_subtareas() if s['ID'] == id), None)
+    if request.method == 'POST':
+        modificar_subtarea(
+            id,
+            request.form['nombre'],
+            request.form['descripcion'],
+            request.form['fecha_limite']
+        )
+        return redirect(url_for('ver_subtareas'))
+    return render_template('editar_subtarea.html', subtarea=subtarea)
 
-@app.route('/subtareas/<int:id>', methods=['DELETE'])
-def borrar_subtarea(id):
+@app.route('/subtareas/<int:id>/eliminar', methods=['POST'])
+def eliminar_subtarea_view(id):
     eliminar_subtarea(id)
-    return jsonify({'mensaje': 'Subtarea eliminada'})
+    return redirect(url_for('ver_subtareas'))
 
 # ------------------ INICIO ------------------
 

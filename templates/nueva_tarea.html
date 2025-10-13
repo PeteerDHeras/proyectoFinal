@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Nueva tarea{% endblock %}
+{% block content %}
+<h2>Crear nueva tarea</h2>
+<form method="POST">
+    <input type="text" name="nombre" placeholder="Nombre" required>
+    <textarea name="descripcion" placeholder="Descripción"></textarea>
+    <input type="date" name="fecha_limite" required>
+    <input type="number" name="prioridad" min="1" max="5" value="1">
+    <button type="submit">Crear</button>
+</form>
+{% endblock %}

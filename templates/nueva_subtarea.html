@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Nueva subtarea{% endblock %}
+{% block content %}
+<h2>Crear nueva subtarea</h2>
+<form method="POST">
+    <input type="text" name="nombre" placeholder="Nombre" required>
+    <textarea name="descripcion" placeholder="Descripción"></textarea>
+    <input type="date" name="fecha_limite" required>
+    <input type="number" name="tarea_padre_id" placeholder="ID de tarea padre" required>
+    <button type="submit">Crear</button>
+</form>
+{% endblock %}

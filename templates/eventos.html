@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Eventos{% endblock %}
+{% block content %}
+<h2>Lista de eventos</h2>
+<a href="{{ url_for('crear_evento_view') }}">Crear nuevo evento</a>
+<ul>
+    {% for evento in eventos %}
+    <li>
+        <strong>{{ evento.Nombre }}</strong>
+        <br>Fecha: {{ evento.Fecha_evento }} a las {{ evento.Hora_evento }}
+        <form method="POST" action="{{ url_for('eliminar_evento_view', id=evento.ID) }}">
+            <button type="submit">Eliminar</button>
+        </form>
+        <a href="{{ url_for('editar_evento_view', id=evento.ID) }}">Editar</a>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}
