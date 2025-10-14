@@ -3,17 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}MyPlanner{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
-    <header>
-        <h1>MyPlanner</h1>
-        {% if session['usuario'] %}
-            <p>Bienvenido, {{ session['usuario'] }}</p>
-            <a href="{{ url_for('logout') }}">Cerrar sesión</a>
-        {% endif %}
-    </header>
-    <main>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('home') }}">MyPlanner</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}">Panel Principal</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('ver_tareas') }}">Tareas</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('ver_eventos') }}">Eventos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('ver_subtareas') }}">Subtareas</a></li>
+                </ul>
+                {% if session.get('usuario') %}
+                    <span class="navbar-text me-3">Hola, {{ session['usuario'] }}</span>
+                    <a class="btn btn-outline-light" href="{{ url_for('logout') }}">Cerrar sesión</a>
+                {% else %}
+                    <a class="btn btn-outline-light" href="{{ url_for('login') }}">Iniciar sesión</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    <main class="container">
         {% block content %}{% endblock %}
     </main>
 </body>

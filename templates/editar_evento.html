@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Nuevo evento{% endblock %}
+{% block title %}Editar evento{% endblock %}
 {% block content %}
-<h2>Crear nuevo evento</h2>
-<form method="POST">
-    <input type="text" name="nombre" placeholder="Nombre del evento" required>
-    <input type="date" name="fecha_evento" required>
-    <input type="time" name="hora_evento" required>
-    <button type="submit">Crear</button>
+<h2>Editar evento</h2>
+<form method="POST" class="col-md-6 mx-auto">
+    <input class="form-control mb-3" type="text" name="nombre" value="{{ evento.Nombre }}" required>
+    <input class="form-control mb-3" type="date" name="fecha_evento" value="{{ evento.Fecha_evento }}" required>
+    <input class="form-control mb-3" type="time" name="hora_evento" value="{{ evento.Hora_evento }}" required>
+    <button class="btn btn-primary w-100" type="submit">Guardar cambios</button>
 </form>
 {% endblock %}

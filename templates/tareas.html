@@ -1,19 +1,24 @@
 {% extends "base.html" %}
 {% block title %}Tareas{% endblock %}
 {% block content %}
-<h2>Lista de tareas</h2>
-<a href="{{ url_for('crear_tarea_view') }}">Crear nueva tarea</a>
-<ul>
+<h2>Tareas</h2>
+<a class="btn btn-success mb-3" href="{{ url_for('crear_tarea_view') }}">Crear nueva tarea</a>
+<div class="row">
     {% for tarea in tareas %}
-    <li>
-        <strong>{{ tarea.Nombre }}</strong> - Prioridad: {{ tarea.Prioridad }}
-        <br>{{ tarea.Descripcion }}
-        <br>Fecha límite: {{ tarea.Fecha_limite }}
-        <form method="POST" action="{{ url_for('eliminar_tarea_view', id=tarea.ID) }}">
-            <button type="submit">Eliminar</button>
-        </form>
-        <a href="{{ url_for('editar_tarea_view', id=tarea.ID) }}">Editar</a>
-    </li>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">{{ tarea.Nombre }}</h5>
+                <p class="card-text">{{ tarea.Descripcion }}</p>
+                <p class="card-text"><strong>Prioridad:</strong> {{ tarea.Prioridad }}</p>
+                <p class="card-text"><strong>Fecha límite:</strong> {{ tarea.Fecha_limite }}</p>
+                <form method="POST" action="{{ url_for('eliminar_tarea_view', id=tarea.ID) }}">
+                    <button class="btn btn-danger btn-sm" type="submit">Eliminar</button>
+                </form>
+                <a class="btn btn-primary btn-sm" href="{{ url_for('editar_tarea_view', id=tarea.ID) }}">Editar</a>
+            </div>
+        </div>
+    </div>
     {% endfor %}
-</ul>
+</div>
 {% endblock %}

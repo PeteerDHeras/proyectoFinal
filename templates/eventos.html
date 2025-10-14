@@ -1,18 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Eventos{% endblock %}
 {% block content %}
-<h2>Lista de eventos</h2>
-<a href="{{ url_for('crear_evento_view') }}">Crear nuevo evento</a>
-<ul>
+<h2>Eventos</h2>
+<a class="btn btn-success mb-3" href="{{ url_for('crear_evento_view') }}">Crear nuevo evento</a>
+<div class="row">
     {% for evento in eventos %}
-    <li>
-        <strong>{{ evento.Nombre }}</strong>
-        <br>Fecha: {{ evento.Fecha_evento }} a las {{ evento.Hora_evento }}
-        <form method="POST" action="{{ url_for('eliminar_evento_view', id=evento.ID) }}">
-            <button type="submit">Eliminar</button>
-        </form>
-        <a href="{{ url_for('editar_evento_view', id=evento.ID) }}">Editar</a>
-    </li>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">{{ evento.Nombre }}</h5>
+                <p class="card-text"><strong>Fecha:</strong> {{ evento.Fecha_evento }}</p>
+                <p class="card-text"><strong>Hora:</strong> {{ evento.Hora_evento }}</p>
+                <form method="POST" action="{{ url_for('eliminar_evento_view', id=evento.ID) }}">
+                    <button class="btn btn-danger btn-sm" type="submit">Eliminar</button>
+                </form>
+                <a class="btn btn-primary btn-sm" href="{{ url_for('editar_evento_view', id=evento.ID) }}">Editar</a>
+            </div>
+        </div>
+    </div>
     {% endfor %}
-</ul>
+</div>
 {% endblock %}

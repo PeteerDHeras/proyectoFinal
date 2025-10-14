@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Panel principal{% endblock %}
+{% block content %}
+<h2>Panel principal</h2>
+<div class="row text-center">
+    <div class="col"><a class="btn btn-outline-primary" href="{{ url_for('ver_tareas') }}">Ver tareas</a></div>
+    <div class="col"><a class="btn btn-outline-primary" href="{{ url_for('ver_eventos') }}">Ver eventos</a></div>
+    <div class="col"><a class="btn btn-outline-primary" href="{{ url_for('ver_subtareas') }}">Ver subtareas</a></div>
+</div>
+{% endblock %}

@@ -2,11 +2,14 @@
 {% block title %}Nueva tarea{% endblock %}
 {% block content %}
 <h2>Crear nueva tarea</h2>
-<form method="POST">
-    <input type="text" name="nombre" placeholder="Nombre" required>
-    <textarea name="descripcion" placeholder="Descripción"></textarea>
-    <input type="date" name="fecha_limite" required>
-    <input type="number" name="prioridad" min="1" max="5" value="1">
-    <button type="submit">Crear</button>
+<form method="POST" class="col-md-6 mx-auto">
+    <input class="form-control mb-3" type="text" name="nombre" placeholder="Nombre" required>
+    <textarea class="form-control mb-3" name="descripcion" placeholder="Descripción"></textarea>
+    <input class="form-control mb-3" type="date" name="fecha_limite" required>
+    <div class="">
+        <label for="prioridad">Prioridad (1 a 3)</label>
+    <input class="form-control mb-3" type="number" name="prioridad" min="1" max="3" value="1" >
+    </div>
+    <button class="btn btn-success w-100" type="submit">Crear</button>
 </form>
 {% endblock %}

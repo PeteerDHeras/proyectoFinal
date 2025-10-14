@@ -2,9 +2,12 @@
 {% block title %}Login{% endblock %}
 {% block content %}
 <h2>Iniciar sesión</h2>
-<form method="POST" action="{{ url_for('login') }}">
-    <input type="text" name="usuario" placeholder="Usuario" required>
-    <input type="password" name="password" placeholder="Contraseña" required>
-    <button type="submit">Entrar</button>
+<form method="POST" class="col-md-6 mx-auto">
+    <input class="form-control mb-3" type="text" name="usuario" placeholder="Usuario" required>
+    <input class="form-control mb-3" type="password" name="password" placeholder="Contraseña" required>
+    <button class="btn btn-primary w-100" type="submit">Entrar</button>
 </form>
+{% if error %}
+<p class="text-danger text-center mt-3">{{ error }}</p>
+{% endif %}
 {% endblock %}

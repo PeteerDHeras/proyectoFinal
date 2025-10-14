@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Editar subtarea{% endblock %}
+{% block content %}
+<h2>Editar subtarea</h2>
+<form method="POST" class="col-md-6 mx-auto">
+    <input class="form-control mb-3" type="text" name="nombre" value="{{ subtarea.Nombre }}" required>
+    <textarea class="form-control mb-3" name="descripcion">{{ subtarea.Descripcion }}</textarea>
+    <input class="form-control mb-3" type="date" name="fecha_limite" value="{{ subtarea.Fecha_limite }}" required>
+    <button class="btn btn-primary w-100" type="submit">Guardar cambios</button>
+</form>
+{% endblock %}
