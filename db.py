@@ -90,30 +90,31 @@ def obtener_tareas():
 
 # FUNCIONES PARA GESTIONAR EVENTOS ------------------------------
 
-# CREAR EVENTO
-def crear_evento(nombre, fecha_evento, hora_evento, creador_id):
+# CREAR EVENTO (con fecha/hora opcional de fin)
+def crear_evento(nombre, fecha_evento, hora_evento, creador_id, fecha_fin=None, hora_fin=None):
     conn = get_connection()
     cursor = conn.cursor()
     query = """
-        INSERT INTO EVENTOS (Nombre, Fecha_creacion, Fecha_evento, Hora_evento, creadorEvento)
-        VALUES (%s, CURDATE(), %s, %s, %s)
+        INSERT INTO EVENTOS (Nombre, Fecha_creacion, Fecha_evento, Hora_evento, creadorEvento, Fecha_fin, Hora_fin)
+        VALUES (%s, CURDATE(), %s, %s, %s, %s, %s)
     """
-    cursor.execute(query, (nombre, fecha_evento, hora_evento, creador_id))
+    cursor.execute(query, (nombre, fecha_evento, hora_evento, creador_id, fecha_fin, hora_fin))
     conn.commit()
     conn.close()
 
-# MODIFICAR EVENTO
-def modificar_evento(evento_id, nombre, fecha_evento, hora_evento):
+# MODIFICAR EVENTO (con fecha/hora opcional de fin)
+def modificar_evento(evento_id, nombre, fecha_evento, hora_evento, fecha_fin=None, hora_fin=None):
     conn = get_connection()
     cursor = conn.cursor()
     query = """
         UPDATE EVENTOS
-        SET Nombre=%s, Fecha_evento=%s, Hora_evento=%s
+        SET Nombre=%s, Fecha_evento=%s, Hora_evento=%s, Fecha_fin=%s, Hora_fin=%s
         WHERE ID=%s
     """
-    cursor.execute(query, (nombre, fecha_evento, hora_evento, evento_id))
+    cursor.execute(query, (nombre, fecha_evento, hora_evento, fecha_fin, hora_fin, evento_id))
     conn.commit()
     conn.close()
+
 
 # ELIMINAR EVENTO
 def eliminar_evento(evento_id):

@@ -1,3 +1,4 @@
+from datetime import datetime, time
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from functools import wraps
 from db import *
@@ -93,90 +94,115 @@ def eliminar_tarea_view(id):
 # ------------------ EVENTOS ------------------
 
 @app.route('/eventos')
-# @login_required DESCOMENTAR PARA AUTH TODO: activar login_required
 def ver_eventos():
     eventos = obtener_eventos()
     return render_template('eventos.html', eventos=eventos)
 
+
 @app.route('/eventos/nuevo', methods=['GET', 'POST'])
-# @login_required DESCOMENTAR PARA AUTH TODO: activar login_required
 def crear_evento_view():
     if request.method == 'POST':
         usuario_actual = session.get('usuario')
         user = obtener_usuario_por_nombre(usuario_actual)
         creador_id = user['ID'] if user else 1
 
+        # Guardar el evento con fecha/hora de inicio y opcional de fin
         crear_evento(
-            request.form['nombre'],
-            request.form['fecha_evento'],
-            request.form['hora_evento'],
-            creador_id,
-            # request.form.get('fecha_fin')  # TODO: manejar fecha_fin si es necesario
+            nombre=request.form['nombre'],
+            fecha_evento=request.form['fecha_evento'],
+            hora_evento=request.form['hora_evento'],
+            creador_id=creador_id,
+            fecha_fin=request.form.get('fecha_fin') or None,
+            hora_fin=request.form.get('hora_fin') or None
         )
+
+        # Redirigir después de guardar
         return redirect(url_for('dashboard'))
 
-    # Capturar la fecha preseleccionada desde la URL (si viene del calendario)
+    # Capturar fecha preseleccionada si viene desde FullCalendar
     fecha_preseleccionada = request.args.get('fecha', '')
     return render_template('nuevo_evento.html', fecha_preseleccionada=fecha_preseleccionada)
 
 
 
 @app.route('/eventos/<int:id>/editar', methods=['GET', 'POST'])
-# @login_required DESCOMENTAR PARA AUTH TODO: activar login_required
 def editar_evento_view(id):
     evento = next((e for e in obtener_eventos() if e['ID'] == id), None)
     if request.method == 'POST':
+        nombre = request.form['nombre']
+        fecha_inicio = request.form['fecha_evento']
+        hora_inicio = request.form['hora_evento']
+        fecha_fin = request.form.get('fecha_fin') or None
+        hora_fin = request.form.get('hora_fin') or hora_inicio
+
         modificar_evento(
             id,
-            request.form['nombre'],
-            request.form['fecha_evento'],
-            request.form['hora_evento'],
-            # request.form.get('fecha_fin') # TODO: manejar fecha_fin si es necesario
+            nombre,
+            fecha_inicio,
+            hora_inicio,
+            fecha_fin,
+            hora_fin
         )
         return redirect(url_for('dashboard'))
+
     return render_template('editar_evento.html', evento=evento)
 
+
 @app.route('/eventos/<int:id>/eliminar', methods=['POST'])
-# @login_required DESCOMENTAR PARA AUTH TODO: activar login_required
 def eliminar_evento_view(id):
     eliminar_evento(id)
     return redirect(url_for('ver_eventos'))
 
+
 # ------------------ API JSON ------------------
 
 @app.route('/api/eventos')
-# @login_required DESCOMENTAR PARA AUTH TODO: activar login_required
 def api_eventos():
     eventos = obtener_eventos()
-    eventos_json = [
-        {
+    eventos_json = []
+
+    for e in eventos:
+        # Fecha y hora de inicio
+        start = f"{e['Fecha_evento']}T{e.get('Hora_evento', '00:00:00')}"
+
+        # Fecha y hora de fin (opcional)
+        if e.get('Fecha_fin'):
+            end = f"{e['Fecha_fin']}T{e.get('Hora_fin', e.get('Hora_evento', '23:59:59'))}"
+        else:
+            end = None
+
+        eventos_json.append({
             "id": e["ID"],
             "title": e["Nombre"],
-            "start": f"{e['Fecha_evento']}T{e['Hora_evento']}",
-            "end": f"{e['Fecha_fin']}T{e['Hora_evento']}" if e.get("Fecha_fin") else None,
-        }
-        for e in eventos
-    ]
+            "start": start,
+            "end": end
+        })
+
     return jsonify(eventos_json)
 
+
+
 @app.route('/api/eventos/<int:evento_id>', methods=['PUT'])
-# @login_required DESCOMENTAR PARA AUTH TODO: activar login_required
 def actualizar_evento_api(evento_id):
     data = request.get_json()
-
     if not data.get("fecha_evento"):
         return jsonify({"error": "Faltan datos"}), 400
 
+    nombre = data.get("nombre", "")
+    fecha_inicio = data["fecha_evento"]
+    hora_inicio = data.get("hora_evento", "00:00:00")
+    fecha_fin = data.get("fecha_fin") or None
+    hora_fin = data.get("hora_fin") or hora_inicio
+
     modificar_evento(
         evento_id,
-        data.get("nombre", ""),  # opcional
-        data["fecha_evento"],
-        data.get("hora_evento", "00:00:00"),
-        data.get("fecha_fin")
+        nombre,
+        fecha_inicio,
+        hora_inicio,
+        fecha_fin,
+        hora_fin
     )
-
     return jsonify({"message": "Evento actualizado correctamente"}), 200
-
 # ------------------ SUBTAREAS ------------------
 
 @app.route('/subtareas')

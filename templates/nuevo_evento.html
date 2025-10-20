@@ -1,19 +1,75 @@
 {% extends "base.html" %}
 {% block title %}Nuevo evento{% endblock %}
 {% block content %}
-<h2>Crear nuevo evento</h2>
-<form method="POST">
-  <label>Nombre del evento:</label>
-  <input type="text" name="nombre" required>
 
-  <label>Fecha del evento:</label>
-  <input type="date" name="fecha_evento"
-         value="{{ fecha_preseleccionada }}" required>
+<div class="d-flex justify-content-center p-5">
+  <div class="card p-4 shadow-sm" style="max-width: 400px; width: 100%;">
+    <h2 class="mb-4 text-center">Crear nuevo evento</h2>
 
-  <label>Hora del evento:</label>
-  <input type="time" name="hora_evento" required>
+    <form method="POST" class="needs-validation mt-4" novalidate>
+      <!-- Nombre del evento -->
+      <div class="mb-3">
+        <label for="nombre" class="form-label">Nombre del evento</label>
+        <input type="text" id="nombre" name="nombre" class="form-control form-control-sm" required>
+        <div class="invalid-feedback">
+          Por favor ingresa el nombre del evento.
+        </div>
+      </div>
 
-  <button type="submit" class="btn btn-primary">Guardar evento</button>
-</form>
+      <!-- Fecha de inicio -->
+      <div class="mb-3 mt-4">
+        <label for="fecha_evento" class="form-label">Fecha de inicio</label>
+          <input type="date" id="fecha_evento" name="fecha_evento"
+                class="form-control form-control-sm" 
+                value="{{ request.args.get('fecha_evento', fecha_preseleccionada) }}" required>
+        <div class="invalid-feedback">
+          Por favor selecciona la fecha del evento.
+        </div>
+      </div>
+
+      <!-- Hora de inicio -->
+      <div class="mb-3 mt-4">
+        <label for="hora_evento" class="form-label">Hora de inicio</label>
+          <input type="time" id="hora_evento" name="hora_evento"
+                class="form-control form-control-sm"
+                value="{{ request.args.get('hora_evento', '') }}" required>
+        <div class="invalid-feedback">
+          Por favor selecciona la hora del evento.
+        </div>
+      </div>
+
+      <!-- Fecha de finalización (opcional) -->
+      <div class="mb-3 mt-4">
+        <label for="fecha_fin" class="form-label">Fecha de finalización (opcional)</label>
+        <input type="date" id="fecha_fin" name="fecha_fin" class="form-control form-control-sm">
+      </div>
+
+      <!-- Hora de finalización (opcional) -->
+      <div class="mb-3 mt-4">
+        <label for="hora_fin" class="form-label">Hora de finalización (opcional)</label>
+        <input type="time" id="hora_fin" name="hora_fin" class="form-control form-control-sm">
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 mt-4">Guardar evento</button>
+    </form>
+  </div>
+</div>
+
+<script>
+// Validación de Bootstrap 5
+(() => {
+  'use strict'
+  const forms = document.querySelectorAll('.needs-validation')
+  Array.from(forms).forEach(form => {
+    form.addEventListener('submit', event => {
+      if (!form.checkValidity()) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+      form.classList.add('was-validated')
+    }, false)
+  })
+})()
+</script>
 
 {% endblock %}

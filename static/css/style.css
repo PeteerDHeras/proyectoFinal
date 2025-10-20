@@ -1,20 +1,131 @@
+/* Fondo general del body */
 body {
-    font-family: 'Segoe UI', sans-serif;
+  background-color: #ffffff;
+  color: #ffffff;
+  font-family: 'Segoe UI', sans-serif;
 }
 
-h2 {
-    margin-top: 20px;
-    margin-bottom: 20px;
+/* Tarjetas y formularios */
+.card {
+  background-color: #ffffff;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 
 form input, form textarea, form button {
-    margin-bottom: 15px;
+  background-color: #ffffff;
+  border: 1px solid #334155;
+  color: #e2e8f0;
 }
 
-.card {
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+form input:focus, form textarea:focus {
+  border-color: #3b82f6; 
+  box-shadow: 0 0 0 0.2rem rgba(103, 154, 236, 0.3);
+}
+
+/* Navbar: textos blancos */
+.navbar .navbar-brand,
+.navbar .nav-link,
+.navbar .navbar-text {
+  color: #ffffff !important;
+  position: relative;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Links al pasar el mouse */
+.navbar .nav-link:hover {
+  color: #dbeafe !important;
+}
+
+/* Hover: fondo gris claro para todo el contorno */
+.navbar .nav-link:hover {
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
 }
 
 .navbar-brand {
-    font-weight: bold;
+  font-weight: bold;
+  color: #e0f2fe !important;
+}
+
+/* Fondo general del calendario */
+#calendar {
+  background-color: #f9fafb;
+  font-family: 'Segoe UI', sans-serif;
+  color: #414141; /* Color de texto principal */
+}
+
+/* Toolbar título */
+.fc .fc-toolbar-title {
+  color: #414141;
+  font-weight: 600;
+  font-size: 1.9rem;
+}
+
+/* Botones */
+.fc .fc-button {
+  background-color: #414141 !important;
+  color: #ffffff !important;
+  border: none;
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.fc .fc-button:hover {
+  background-color: #595959;
+  color: #ffffff !important;
+}
+
+/* Flechas de navegación: eliminamos los antiguos */
+.fc .fc-prev-button::before,
+.fc .fc-next-button::after {
+  content: none !important;
+}
+
+/* Día de hoy */
+.fc .fc-day-today {
+  background-color: #baddff !important; /* gris suave */
+  color: #000000 !important;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+/* Eventos */
+.fc .fc-event {
+  background-color: #305be9; /* color fuerte */
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+/* Números de días */
+.fc .fc-daygrid-day-number {
+  color: #414141;
+  font-weight: 500;
+}
+
+/* Encabezados de columnas (Lun, Mar, ...) */
+.fc .fc-col-header-cell {
+background-color: #414141;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Título del evento */
+.fc .fc-event-title {
+  color: #ffffff;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+/* Hora de los eventos */
+.fc .fc-event-time {
+  color: #ffffff;
 }
