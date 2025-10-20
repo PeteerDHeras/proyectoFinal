@@ -34,9 +34,18 @@ def verificar_usuario(nombre, contraseña):
     if result and bcrypt.checkpw(contraseña.encode('utf-8'), result[0].encode('utf-8')):
         return True
     return False
-    
+
+# Obtener usuario por nombre
+def obtener_usuario_por_nombre(nombre):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT ID FROM USUARIO WHERE usuario = %s", (nombre,))      # TODO: Mejorar y obtener el usuario entero
+    usuario = cursor.fetchone()
+    conn.close()
+    return usuario
+
 # FUNCIONES PARA GESTIONAR TAREAS ------------------------------
-    
+
 # CREAR TAREA
 def crear_tarea(nombre, descripcion, fecha_limite, prioridad, creador_id):
     conn = get_connection()
@@ -69,7 +78,7 @@ def eliminar_tarea(tarea_id):
     cursor.execute("DELETE FROM TAREAS WHERE ID=%s", (tarea_id,))
     conn.commit()
     conn.close()
-    
+
 # OBTENER TAREAS
 def obtener_tareas():
     conn = get_connection()
@@ -113,7 +122,7 @@ def eliminar_evento(evento_id):
     cursor.execute("DELETE FROM EVENTOS WHERE ID=%s", (evento_id,))
     conn.commit()
     conn.close()
-    
+
 # OBTENER EVENTOS
 def obtener_eventos():  
     conn = get_connection()
@@ -124,6 +133,8 @@ def obtener_eventos():
     return eventos
     
 # FUNCIONES PARA GESTIONAR SUBATREAS ------------------------------
+
+# FUNCIONES PARA GESTIONAR SUBTAREAS ------------------------------
 
 # CREAR SUBTAREA
 def crear_subtarea(nombre, descripcion, fecha_limite, tarea_padre_id, creador_id):
@@ -157,6 +168,7 @@ def eliminar_subtarea(subtarea_id):
     cursor.execute("DELETE FROM SUBTAREAS WHERE ID=%s", (subtarea_id,))
     conn.commit()
     conn.close()
+    
 # OBTENER SUBTAREAS
 def obtener_subtareas():
     conn = get_connection()
