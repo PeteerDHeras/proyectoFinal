@@ -2,10 +2,18 @@
 {% block title %}Nuevo evento{% endblock %}
 {% block content %}
 <h2>Crear nuevo evento</h2>
-<form method="POST" class="col-md-6 mx-auto">
-    <input class="form-control mb-3" type="text" name="nombre" placeholder="Nombre del evento" required>
-    <input class="form-control mb-3" type="date" name="fecha_evento" required>
-    <input class="form-control mb-3" type="time" name="hora_evento" required>
-    <button class="btn btn-success w-100" type="submit">Crear</button>
+<form method="POST">
+  <label>Nombre del evento:</label>
+  <input type="text" name="nombre" required>
+
+  <label>Fecha del evento:</label>
+  <input type="date" name="fecha_evento"
+         value="{{ fecha_preseleccionada }}" required>
+
+  <label>Hora del evento:</label>
+  <input type="time" name="hora_evento" required>
+
+  <button type="submit" class="btn btn-primary">Guardar evento</button>
 </form>
+
 {% endblock %}
