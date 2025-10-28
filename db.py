@@ -110,28 +110,28 @@ def obtener_eventos():
 
 # ----------- FUNCIONES PARA GESTIONAR TAREAS ------------------------ TODO: IMPLEMENTAR EN APP.PY
 
-# CREAR TAREA
-def crear_tarea(nombre, descripcion, fecha_limite, prioridad, creador_id):
+# Modificar CREAR TAREA para incluir estado
+def crear_tarea(nombre, descripcion, fecha_limite, prioridad, creador_id, estado='Pendiente'):
     conn = get_connection()
     cursor = conn.cursor()
     query = """
-        INSERT INTO TAREAS (Nombre, Descripcion, Fecha_creacion, Fecha_limite, Prioridad, creadorTarea)
-        VALUES (%s, %s, CURDATE(), %s, %s, %s)
+        INSERT INTO TAREAS (Nombre, Descripcion, Fecha_creacion, Fecha_limite, Prioridad, creadorTarea, Estado)
+        VALUES (%s, %s, CURDATE(), %s, %s, %s, %s)
     """
-    cursor.execute(query, (nombre, descripcion, fecha_limite, prioridad, creador_id))
+    cursor.execute(query, (nombre, descripcion, fecha_limite, prioridad, creador_id, estado))
     conn.commit()
     conn.close()
 
-# MODIFICAR TAREA
-def modificar_tarea(tarea_id, nombre, descripcion, fecha_limite, prioridad):
+# Modificar MODIFICAR TAREA para incluir estado
+def modificar_tarea(tarea_id, nombre, descripcion, fecha_limite, prioridad, estado):
     conn = get_connection()
     cursor = conn.cursor()
     query = """
         UPDATE TAREAS
-        SET Nombre=%s, Descripcion=%s, Fecha_limite=%s, Prioridad=%s
+        SET Nombre=%s, Descripcion=%s, Fecha_limite=%s, Prioridad=%s, Estado=%s
         WHERE ID=%s
     """
-    cursor.execute(query, (nombre, descripcion, fecha_limite, prioridad, tarea_id))
+    cursor.execute(query, (nombre, descripcion, fecha_limite, prioridad, estado, tarea_id))
     conn.commit()
     conn.close()
 

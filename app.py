@@ -213,21 +213,68 @@ def delete_event(id):
 # Si se accede a alguna de estas rutas serán redirigidas al dashboard.
 
 @app.route('/tareas')
+# @login_required
 def ver_tareas():
-    return redirect(url_for('dashboard'))
+    tareas = obtener_tareas()
+    return render_template('tareas/tareas.html', tareas=tareas)
 
 @app.route('/tareas/nueva', methods=['GET', 'POST'])
+# @login_required
 def crear_tarea_view():
-    return redirect(url_for('dashboard'))
+    if request.method == 'POST':
+        usuario_actual = session.get('usuario')
+        user = obtener_usuario_por_nombre(usuario_actual)
+        creador_id = user['ID'] if user else 1
+
+        crear_tarea(
+            nombre=request.form['nombre'],
+            descripcion=request.form.get('descripcion', ''),
+            fecha_limite=request.form['fecha_limite'],
+            prioridad=request.form['prioridad'],
+            creador_id=creador_id,
+            estado='Pendiente'  # Por defecto
+        )
+        return redirect(url_for('ver_tareas'))
+    
+    return render_template('tareas/nueva_tarea.html')
 
 @app.route('/tareas/<int:id>/editar', methods=['GET', 'POST'])
+# @login_required
 def editar_tarea_view(id):
-    return redirect(url_for('dashboard'))
+    tareas = obtener_tareas()
+    tarea = next((t for t in tareas if t['ID'] == id), None)
+    
+    if request.method == 'POST':
+        modificar_tarea(
+            tarea_id=id,
+            nombre=request.form['nombre'],
+            descripcion=request.form.get('descripcion', ''),
+            fecha_limite=request.form['fecha_limite'],
+            prioridad=request.form['prioridad'],
+            estado=request.form.get('estado', 'Pendiente')
+        )
+        return redirect(url_for('ver_tareas'))
+    
+    return render_template('tareas/editar_tarea.html', tarea=tarea)
 
 @app.route('/tareas/<int:id>/eliminar', methods=['POST'])
+# @login_required
 def eliminar_tarea_view(id):
-    return redirect(url_for('dashboard'))
+    eliminar_tarea(id)
+    return redirect(url_for('ver_tareas'))
 
+# API para cambiar estado con checkbox
+@app.route('/tareas/<int:id>/estado', methods=['POST'])
+# @login_required
+def actualizar_estado_tarea_view(id):
+    data = request.get_json()
+    estado = data.get('estado')
+    
+    try:
+        actualizar_estado_tarea(id, estado)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 # ------------------ SUBTAREAS (Archivadas) ------------------
