@@ -111,7 +111,7 @@ def obtener_eventos():
 # ----------- FUNCIONES PARA GESTIONAR TAREAS ------------------------ TODO: IMPLEMENTAR EN APP.PY
 
 # Modificar CREAR TAREA para incluir estado
-def crear_tarea(nombre, descripcion, fecha_limite, prioridad, creador_id, estado='Pendiente'):
+def crear_tarea(nombre, descripcion, fecha_limite, prioridad, creador_id, estado=0):
     conn = get_connection()
     cursor = conn.cursor()
     query = """
@@ -153,12 +153,17 @@ def actualizar_estado_tarea(tarea_id, estado):
 
 # OBTENER TAREAS
 def obtener_tareas():
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM TAREAS")
-    tareas = cursor.fetchall()
-    conn.close()
+    conexion = get_connection()
+    with conexion.cursor(dictionary=True) as cursor:
+        cursor.execute("SELECT * FROM tareas")
+        tareas = cursor.fetchall()
+        for t in tareas:
+            estado = int(t.get('Estado') or t.get('estado') or 0)
+            t['Estado'] = estado  # ← Esto es clave para que Jinja lo compare bien
+            t['Estado_str'] = 'Pendiente' if estado == 0 else 'Completada'
+    conexion.close()
     return tareas
+
 
 
 # FUNCIONES PARA GESTIONAR SUBTAREAS ------------------------------ TODO: IMPLEMENTAR EN APP.PY (SI ES NECESARIO)

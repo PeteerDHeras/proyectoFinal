@@ -6,8 +6,6 @@ from db import *
 # ------------------ FLASK ------------------
 app = Flask(__name__)
 app.secret_key = 'clave_secreta_segura'
-if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, debug=True) # Escuchar en todas las interfaces
 
 
 def login_required(f):
@@ -218,15 +216,14 @@ def delete_event(id):
 
 
 
-# ------------------ TAREAS (Archivadas) ------------------
-# Las rutas de tareas/subtareas se han simplificado/archivado temporalmente.
-# Si se accede a alguna de estas rutas serán redirigidas al dashboard.
+# ------------------ TAREAS ------------------
+
 
 @app.route('/tareas')
 # @login_required
 def ver_tareas():
     tareas = obtener_tareas()
-    return render_template('tareas/tareas.html', tareas=tareas)
+    return render_template('tareas.html', tareas=tareas)
 
 @app.route('/tareas/nueva', methods=['GET', 'POST'])
 # @login_required
@@ -242,11 +239,11 @@ def crear_tarea_view():
             fecha_limite=request.form['fecha_limite'],
             prioridad=request.form['prioridad'],
             creador_id=creador_id,
-            estado='Pendiente'  # Por defecto
+            estado=0  # Por defecto
         )
         return redirect(url_for('ver_tareas'))
     
-    return render_template('tareas/nueva_tarea.html')
+    return render_template('nueva_tarea.html')
 
 @app.route('/tareas/<int:id>/editar', methods=['GET', 'POST'])
 # @login_required
@@ -255,17 +252,18 @@ def editar_tarea_view(id):
     tarea = next((t for t in tareas if t['ID'] == id), None)
     
     if request.method == 'POST':
+        estado = 1 if request.form.get('estado') == 'Completada' else 0
         modificar_tarea(
             tarea_id=id,
             nombre=request.form['nombre'],
             descripcion=request.form.get('descripcion', ''),
             fecha_limite=request.form['fecha_limite'],
             prioridad=request.form['prioridad'],
-            estado=request.form.get('estado', 'Pendiente')
+            estado=estado
         )
         return redirect(url_for('ver_tareas'))
     
-    return render_template('tareas/editar_tarea.html', tarea=tarea)
+    return render_template('editar_tarea.html', tarea=tarea)
 
 @app.route('/tareas/<int:id>/eliminar', methods=['POST'])
 # @login_required
@@ -275,16 +273,16 @@ def eliminar_tarea_view(id):
 
 # API para cambiar estado con checkbox
 @app.route('/tareas/<int:id>/estado', methods=['POST'])
-# @login_required
 def actualizar_estado_tarea_view(id):
     data = request.get_json()
-    estado = data.get('estado')
+    estado = int(data.get('estado', 0))  # Espera 0 o 1
     
     try:
         actualizar_estado_tarea(id, estado)
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
 
 
 # ------------------ SUBTAREAS (Archivadas) ------------------
@@ -306,3 +304,5 @@ def editar_subtarea_view(id):
 def eliminar_subtarea_view(id):
     return redirect(url_for('dashboard'))
 
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=5000, debug=True) # Escuchar en todas las interfaces

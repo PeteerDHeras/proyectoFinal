@@ -197,3 +197,11 @@ form textarea:focus {
 .fc .fc-next-button::after {
   content: none !important;
 }
+
+/* ================================
+   BOTONES DE PRIORIDAD EN TAREAS
+================================ */
+
+.bg-orange {
+  background-color: #e72333; /* naranja claro */
+}

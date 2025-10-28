@@ -51,8 +51,8 @@
       <div class="mb-3 mt-4">
         <label for="estado" class="form-label">Estado</label>
         <select id="estado" name="estado" class="form-select form-select-sm" required>
-          <option value="Pendiente" {% if tarea.Estado=='Pendiente' %}selected{% endif %}>Pendiente</option>
-          <option value="Completada" {% if tarea.Estado=='Completada' %}selected{% endif %}>Completada</option>
+          <option value="Pendiente" {% if tarea.Estado==0 %}selected{% endif %}>Pendiente</option>
+          <option value="Completada" {% if tarea.Estado==1 %}selected{% endif %}>Completada</option>
         </select>
         <div class="invalid-feedback">
           Por favor selecciona el estado.

@@ -164,3 +164,51 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 });
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.tarea-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const tareaId = this.getAttribute('data-tarea-id');
+            const completada = this.checked;
+            const estado = completada ? 1 : 0;
+            
+            fetch(`/tareas/${tareaId}/estado`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ estado: estado })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const card = this.closest('.card');
+                    const estadoBadge = card.querySelector('.estado-badge');
+
+                    if (this.checked) {
+                        estadoBadge.textContent = 'Completada';
+                        estadoBadge.classList.remove('bg-secondary');
+                        estadoBadge.classList.add('bg-success');
+                        card.querySelector('.card-title').classList.add('text-decoration-line-through', 'text-muted');
+                        const desc = card.querySelector('.card-text');
+                        if (desc) desc.classList.add('text-decoration-line-through');
+                    } else {
+                        estadoBadge.textContent = 'Pendiente';
+                        estadoBadge.classList.remove('bg-success');
+                        estadoBadge.classList.add('bg-secondary');
+                        card.querySelector('.card-title').classList.remove('text-decoration-line-through', 'text-muted');
+                        const desc = card.querySelector('.card-text');
+                        if (desc) desc.classList.remove('text-decoration-line-through');
+                    }
+                } else {
+                    alert('Error al actualizar el estado de la tarea');
+                    this.checked = !this.checked;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al actualizar el estado de la tarea');
+                this.checked = !completada;
+            });
+        });
+    });
+});
