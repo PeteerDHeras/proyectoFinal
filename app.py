@@ -163,13 +163,23 @@ def api_eventos():
 def actualizar_evento_api(evento_id):
     data = request.get_json()
     if not data.get("fecha_evento"):
-        return jsonify({"error": "Faltan datos"}), 400
+        return jsonify({"error": "Falta fecha_evento"}), 400
 
     nombre = data.get("nombre", "")
     fecha_inicio = data["fecha_evento"]
     hora_inicio = data.get("hora_evento", "00:00:00")
     fecha_fin = data.get("fecha_fin") or None
     hora_fin = data.get("hora_fin") or hora_inicio
+
+    # Validación simple
+    if fecha_fin:
+        try:
+            fi = datetime.strptime(fecha_inicio, "%Y-%m-%d")
+            ff = datetime.strptime(fecha_fin, "%Y-%m-%d")
+            if ff < fi:
+                return jsonify({"error": "fecha_fin anterior a fecha_evento"}), 400
+        except ValueError:
+            return jsonify({"error": "Formato de fecha inválido"}), 400
 
     modificar_evento(
         evento_id,
