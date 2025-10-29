@@ -21,7 +21,7 @@ def login_required(f):
 
 @app.route('/')
 def home():
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
 
 # ------------------ AUTENTICACIÓN ------------------
 
