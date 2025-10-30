@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import mysql.connector
 import bcrypt
 
@@ -89,26 +90,7 @@ def obtener_eventos():
     conn.close()
     return eventos
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# ----------- FUNCIONES PARA GESTIONAR TAREAS ------------------------ TODO: IMPLEMENTAR EN APP.PY
+# ----------- FUNCIONES PARA GESTIONAR TAREAS ------------------------ 
 
 # Modificar CREAR TAREA para incluir estado
 def crear_tarea(nombre, descripcion, fecha_limite, prioridad, creador_id, estado=0):
@@ -163,6 +145,67 @@ def obtener_tareas():
             t['Estado_str'] = 'Pendiente' if estado == 0 else 'Completada'
     conexion.close()
     return tareas
+
+# OBTENER RESUMEN SEMANA
+def obtener_resumen_semana():
+    """Devuelve el número total de tareas y las completadas en la semana actual."""
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    hoy = datetime.now().date()
+    inicio_semana = hoy - timedelta(days=hoy.weekday())       # Lunes
+    fin_semana = inicio_semana + timedelta(days=6)            # Domingo
+
+    query_total = """
+        SELECT COUNT(*) AS total
+        FROM TAREAS
+        WHERE Fecha_limite BETWEEN %s AND %s
+    """
+    query_completadas = """
+        SELECT COUNT(*) AS completadas
+        FROM TAREAS
+        WHERE Estado = 1 AND Fecha_limite BETWEEN %s AND %s
+    """
+
+    cursor.execute(query_total, (inicio_semana, fin_semana))
+    total = cursor.fetchone()['total']
+
+    cursor.execute(query_completadas, (inicio_semana, fin_semana))
+    completadas = cursor.fetchone()['completadas']
+
+    conn.close()
+    return completadas, total
+
+# OBTENER EVENTOS DE MAÑANA
+def obtener_eventos_manana():
+    """Devuelve el número de eventos del día siguiente."""
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    hoy = datetime.now().date()
+    manana = hoy + timedelta(days=1)
+
+    query = "SELECT COUNT(*) AS eventos FROM EVENTOS WHERE Fecha_evento = %s"
+    cursor.execute(query, (manana,))
+    cantidad = cursor.fetchone()['eventos']
+
+    conn.close()
+    return cantidad
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -21,7 +21,7 @@ def login_required(f):
 
 @app.route('/')
 def home():
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
 
 # ------------------ AUTENTICACIÓN ------------------
 
@@ -44,17 +44,40 @@ def logout():
 # ----------------- DASHBOARD -----------------
 
 @app.route('/dashboard')
-# @login_required                                                        TODO: activar login_required
 def dashboard():
     eventos = obtener_eventos()
-    tareas = []
-    try:
-        tareas = obtener_tareas()
-    except Exception:
-        tareas = []
+    tareas = obtener_tareas()
+    completadas_semana, total_semana = obtener_resumen_semana()
+    eventos_manana = obtener_eventos_manana()
+    fecha_hoy = datetime.now().date()
 
-    # pasar una lista corta de eventos y tareas al dashboard
-    return render_template('dashboard.html', eventos=eventos[:5], tareas=tareas[:5])
+    # --- Filtrar eventos de hoy ---
+    eventos_hoy = []
+    for e in eventos:
+        fecha_evento = e['Fecha_evento']
+        if isinstance(fecha_evento, str):
+            fecha_evento = datetime.strptime(fecha_evento, '%Y-%m-%d').date()
+        if fecha_evento == fecha_hoy:
+            eventos_hoy.append(e)
+
+    # --- Filtrar tareas de hoy ---
+    tareas_hoy = []
+    for t in tareas:
+        fecha_limite = t['Fecha_limite']
+        if isinstance(fecha_limite, str):
+            fecha_limite = datetime.strptime(fecha_limite, '%Y-%m-%d').date()
+        if fecha_limite == fecha_hoy:
+            tareas_hoy.append(t)
+
+    return render_template(
+        'dashboard.html',
+        eventos_hoy=eventos_hoy[:5],
+        tareas_hoy=tareas_hoy,
+        completadas_semana=completadas_semana,
+        total_semana=total_semana,
+        eventos_manana=eventos_manana,
+    )
+
 
 # ----------------- CALENDARIO ----------------
 
@@ -132,29 +155,31 @@ def eliminar_evento_view(id):
 # ------------------ API JSON EVENTOS ------------------
 
 @app.route('/api/eventos')
-# @login_required                                                        TODO: activar login_required
 def api_eventos():
     eventos = obtener_eventos()
     eventos_json = []
 
-    for e in eventos:
-        # Fecha y hora de inicio
-        start = f"{e['Fecha_evento']}T{e.get('Hora_evento', '00:00:00')}"
+    fecha_hoy = datetime.today().date()
 
-        # Fecha y hora de fin (opcional)
-        if e.get('Fecha_fin'):
-            end = f"{e['Fecha_fin']}T{e.get('Hora_fin', e.get('Hora_evento', '23:59:59'))}"
-        else:
-            end = None
+    for e in eventos:
+        # Convertimos la fecha del evento a objeto date
+        fecha_evento = datetime.strptime(e['Fecha_evento'], "%Y-%m-%d").date()
+        if fecha_evento != fecha_hoy:
+            continue  # Saltamos los que no sean de hoy
+
+        # Hora inicio y fin solo HH:MM
+        hora_inicio = e.get('Hora_evento', '00:00')[:5]
+        hora_fin = e.get('Hora_fin', hora_inicio)[:5]
 
         eventos_json.append({
             "id": e["ID"],
             "title": e["Nombre"],
-            "start": start,
-            "end": end
+            "start": f"{e['Fecha_evento']}T{hora_inicio}",
+            "end": f"{e.get('Fecha_fin', e['Fecha_evento'])}T{hora_fin}"
         })
 
     return jsonify(eventos_json)
+
 
 @app.route('/api/eventos/<int:evento_id>', methods=['PUT'])
 # @login_required                                                        TODO: activar login_required

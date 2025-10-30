@@ -6,6 +6,12 @@
     <title>{% block title %}MyPlanner{% endblock %}</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+      <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap"
+    rel="stylesheet" />
     <!-- FullCalendar JS -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
 
@@ -69,7 +75,7 @@
             </div>
         </aside>
 
-        <main class="flex-grow-1 p-1">
+        <main class="flex-grow-1 p-8 bg-background-light">
             {% block content %}{% endblock %}
             <div class="row mt-3">
                 <div class="col-12">

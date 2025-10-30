@@ -1,92 +1,185 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
+<script>
+	tailwind.config = {
+		darkMode: "class",
+		theme: {
+			extend: {
+				colors: {
+					"primary": "#007BFF",
+					"background-light": "#F8F9FA",
+					"background-dark": "#111827",
+					"card-dark": "#1f2937",
+					"card-light": "#FFFFFF"
+				},
+				fontFamily: {
+					"display": ["Inter", "sans-serif"]
+				},
+				borderRadius: {
+					"DEFAULT": "0.5rem",
+					"lg": "0.75rem",
+					"xl": "1rem",
+					"full": "9999px"
+				},
+			},
+		},
+	}
+</script>
+
 <div class="container-fluid">
-	<div class="row mb-3">
-		<div class="col-12">
-			<div class="card border-0 shadow-sm">
-				<div class="card-body d-flex justify-content-between align-items-center">
-					<div>
-						<h5 class="mb-1">MyPlanner</h5>
-						<p class="mb-0 text-muted small">Resumen rápido de tu cuenta: eventos próximos y tareas pendientes. Usa los botones abajo para ver o crear contenido.</p>
+	<header class="flex flex-wrap justify-between items-center gap-4 mb-8">
+		<p class="text-gray-900 text-4xl font-black leading-tight tracking-tighter">Dashboard</p>
+		<div class="flex items-center gap-4">
+			<a class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium leading-normal px-4 py-2 rounded-lg shadow-sm"
+				href="{{ url_for('crear_evento_view') }}">
+				<span class="material-symbols-outlined">add_circle</span>
+				Nuevo Evento
+			</a>
+			<a class="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium leading-normal px-4 py-2 rounded-lg shadow-sm"
+				href="{{ url_for('crear_tarea_view') }}">
+				<span class="material-symbols-outlined">add_task</span>
+				Nueva Tarea
+			</a>
+		</div>
+	</header>
+
+	<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+		<section class="lg:col-span-2 flex flex-col gap-8">
+			<!-- Semana de un vistazo -->
+			<div class="bg-card-light p-6 rounded-xl shadow-sm flex flex-col items-start gap-4">
+				<h2 class="text-gray-900 text-xl font-bold leading-tight tracking-tight">
+					Tu Semana de un Vistazo
+				</h2>
+
+				<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+					<div class="bg-primary/10 p-3 rounded-lg flex flex-col items-start justify-center">
+						<p class="text-gray-600 text-sm font-medium">Tareas Completadas</p>
+						<p class="text-primary text-3xl font-bold" id="contador-tareas">
+							{{ completadas_semana }}/{{ total_semana }}
+						</p>
 					</div>
-					<div class="text-end">
-						<span class="badge bg-primary me-2">Eventos: {{ eventos|length }}</span>
-						<span class="badge bg-secondary">Tareas: {{ tareas|length }}</span>
+					<div class="bg-yellow-500/10 p-3 rounded-lg flex flex-col items-start justify-center">
+						<p class="text-gray-600 text-sm font-medium">Eventos Mañana</p>
+						<p class="text-yellow-500 text-3xl font-bold">
+							{{ eventos_manana }}
+						</p>
 					</div>
 				</div>
 			</div>
-		</div>
-	</div>
-	<div class="row g-4">
-		<div class="col-md-6">
-			<div class="card">
-				<div class="card-header bg-warning bg-opacity-25 text-dark rounded-top px-3 py-2">
-					<h3 class="card-title mb-0">Próximos eventos</h3>
-				</div>
-				<div class="card-body">
-					{% if eventos %}
-						<ul class="list-unstyled">
-						{% for evento in eventos %}
-							<li class="mb-2">
-								<strong>{{ evento.Nombre }}</strong>
-								<div class="text-muted small">{{ evento.Fecha_evento }} {{ evento.Hora_evento or '' }}</div>
-							</li>
-						{% endfor %}
-						</ul>
-					{% else %}
-						<p class="text-muted">No hay eventos próximos.</p>
-						<!-- Plantilla de ejemplo: posibles eventos que podrías crear -->
-						<div class="mt-3">
-							<div class="sample-list-item">
-								<div class="fw-bold">Reunión de equipo</div>
-								<div class="sample-note">Fecha: 2025-11-03 • Hora: 10:00</div>
+
+			<!-- Próximos Eventos Hoy -->
+			<div class="bg-card-light p-6 rounded-xl shadow-sm flex flex-col items-start gap-4">
+				<h2 class="text-gray-900 text-[22px] font-bold leading-tight tracking-[-0.015em]">
+					Próximos Eventos Hoy
+				</h2>
+
+				<div class="flex flex-col gap-2 w-full">
+					{% if eventos_hoy %}
+						{% for evento in eventos_hoy %}
+						<div class="flex items-center gap-4 bg-card-light px-4 min-h-[72px] py-2 justify-between border-b border-gray-200 last:border-b-0">
+							<div class="flex items-center gap-4">
+								<div class="text-gray-600 flex items-center justify-center rounded-lg bg-gray-100 shrink-0 size-12">
+									<span class="material-symbols-outlined">
+									{% if 'reunión' in evento.Nombre|lower %}
+										groups
+									{% elif 'llamada' in evento.Nombre|lower or 'call' in evento.Nombre|lower %}
+										phone
+									{% elif 'diseño' in evento.Nombre|lower %}
+										design_services
+									{% else %}
+										event
+									{% endif %}
+									</span>
+								</div>
+
+								<div class="flex flex-col justify-center items-start">
+									<p class="text-gray-900 text-base font-medium leading-normal line-clamp-1">
+										{{ evento.Nombre }}
+									</p>
+									<p class="text-gray-500 text-sm font-normal leading-normal line-clamp-2">
+										 {{ evento.Hora_evento }}
+									</p>
+								</div>
 							</div>
-							<div class="sample-list-item">
-								<div class="fw-bold">Lanzamiento campaña</div>
-								<div class="sample-note">Fecha: 2025-11-10 • Hora: 09:00</div>
-							</div>
-							<div class="sample-list-item">
-								<div class="fw-bold">Cita con proveedor</div>
-								<div class="sample-note">Fecha: 2025-11-15 • Hora: 16:00</div>
+
+							<div class="shrink-0">
+								<a href="{{ url_for('ver_eventos') }}" 
+									class="text-primary text-sm font-medium leading-normal hover:underline">
+									Ver Detalles
+								</a>
 							</div>
 						</div>
-					{% endif %}
-				</div>
-			</div>
-		</div>
-
-		<div class="col-md-6">
-			<div class="card">
-				<div class="card-header bg-warning bg-opacity-25 text-dark rounded-top px-3 py-2">
-					<h3 class="card-title mb-0">Tareas pendientes</h3>
-				</div>
-				<div class="card-body">
-					{% if tareas %}
-						<ul class="list-group">
-						{% for tarea in tareas %}
-							<li class="list-group-item d-flex justify-content-between align-items-start">
-								<div>
-									<div class="fw-bold">{{ tarea.Nombre }}</div>
-									<div class="small text-muted">Vence: {{ tarea.Fecha_limite }}</div>
-								</div>
-								<span class="badge bg-secondary rounded-pill">P: {{ tarea.Prioridad }}</span>
-							</li>
 						{% endfor %}
-						</ul>
 					{% else %}
-						<p class="text-muted">No hay tareas pendientes.</p>
+						<p class="text-gray-500 text-sm">No hay eventos hoy.</p>
 					{% endif %}
 				</div>
-			</div>
-		</div>
-	</div>
 
-	<div class="row mt-4">
-		<div class="col-12">
-			<a href="{{ url_for('events') }}" class="btn btn-outline-primary me-2">Ver todos los eventos</a>
-			<a href="{{ url_for('ver_tareas') }}" class="btn btn-outline-secondary">Ver todas las tareas</a>
-		</div>
+				<div class="flex justify-end w-full mt-2">
+					<a href="{{ url_for('ver_eventos') }}"
+						class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 flex items-center rounded-lg gap-2">
+						<span class="material-symbols-outlined">event</span>
+						Ver todos los eventos
+					</a>
+				</div>
+			</div>
+		</section>
+
+		<aside class="flex flex-col gap-8">
+			<!-- Tareas para Hoy -->
+			<div class="bg-card-light p-6 rounded-xl shadow-sm flex flex-col items-start gap-4">
+				<h2 class="text-gray-900 text-[22px] font-bold leading-tight tracking-[-0.015em]">
+					Tareas para Hoy
+				</h2>
+
+				<div class="flex flex-col gap-4 w-full">
+					{% if tareas_hoy %}
+						{% for tarea in tareas_hoy %}
+						<div class="flex items-center gap-3 w-full">
+							<input type="checkbox"
+								class="tarea-checkbox h-5 w-5 rounded border-gray-300 bg-gray-50 text-primary focus:ring-primary focus:ring-offset-background-light cursor-pointer"
+								id="tarea-{{ tarea.ID }}"
+								data-tarea-id="{{ tarea.ID }}"
+								{% if tarea.Estado == 1 %}checked{% endif %} />
+
+							<p class="{% if tarea.Estado == 1 %}text-gray-500 line-through{% else %}text-gray-800{% endif %}">
+								{{ tarea.Nombre }}
+							</p>
+
+							{% if tarea.Prioridad in [3, '3', 'Alta', 'alta'] %}
+							<span class="ml-auto text-xs font-medium text-yellow-800 bg-yellow-100 px-2 py-1 rounded-full">
+								Alta
+							</span>
+							{% elif tarea.Prioridad in [2, '2', 'Media', 'media'] %}
+							<span class="ml-auto text-xs font-medium text-blue-800 bg-blue-100 px-2 py-1 rounded-full">
+								Media
+							</span>
+							{% elif tarea.Prioridad in [1, '1', 'Baja', 'baja'] %}
+							<span class="ml-auto text-xs font-medium text-green-800 bg-green-100 px-2 py-1 rounded-full">
+								Baja
+							</span>
+							{% else %}
+							<span class="ml-auto text-xs font-medium text-gray-800 bg-gray-100 px-2 py-1 rounded-full">
+								{{ tarea.Prioridad }}
+							</span>
+							{% endif %}
+						</div>
+						{% endfor %}
+					{% else %}
+						<p class="text-gray-500 text-sm">No tienes tareas asignadas para hoy.</p>
+					{% endif %}
+				</div>
+
+				<div class="flex justify-end w-full mt-2">
+					<a href="{{ url_for('ver_tareas') }}"
+						class="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 flex items-center rounded-lg gap-2">
+						<span class="material-symbols-outlined">check_circle</span>
+						Ver todas las tareas
+					</a>
+				</div>
+			</div>
+		</aside>
 	</div>
 </div>
 {% endblock %}

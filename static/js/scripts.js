@@ -26,32 +26,10 @@ document.addEventListener('DOMContentLoaded', function () {
     dragScroll: true,
     timeZone: 'Europe/Madrid',
     locale: 'es',
-    defaultTimedEventDuration: '00:30:00',
+    defaultTimedEventDuration: '00:00:10',
     eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
     events: '/api/eventos',
-
-    // Selección de rango para crear evento (día único o varios días)
-    select: function(info) {
-      // info.startStr y info.endStr (end es exclusivo)
-      const start = info.startStr;
-      // Ajustar end exclusivo (FullCalendar da end sin incluir el último día en dayGrid)
-      let end = info.endStr;
-      // Para selección de solo un día end = siguiente día -> si quieres día único pasa solo start
-      const params = new URLSearchParams();
-      params.set('fecha_evento', start);
-      // Si la selección abarca más de un día, añadir fecha_fin
-      if (info.end && info.end > info.start) {
-        // restar un día al end exclusivo para que coincida con tu semántica
-        const endDate = new Date(info.end.getTime() - 24 * 60 * 60 * 1000);
-        const yyyy = endDate.getFullYear();
-        const mm = String(endDate.getMonth() + 1).padStart(2, '0');
-        const dd = String(endDate.getDate()).padStart(2, '0');
-        const endInclusive = `${yyyy}-${mm}-${dd}`;
-        params.set('fecha_fin', endInclusive);
-      }
-      window.location.href = `/eventos/nuevo?${params.toString()}`;
-    },
-
+    
     // Click en un día para evento rápido (mantengo tu lógica)
     dateClick: function(info) {
       const params = new URLSearchParams();
@@ -172,38 +150,47 @@ document.addEventListener('DOMContentLoaded', function() {
             const estado = completada ? 1 : 0;
             
             fetch(`/tareas/${tareaId}/estado`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ estado: estado })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const card = this.closest('.card');
-                    const estadoBadge = card.querySelector('.estado-badge');
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ estado: estado })
+                })
+                .then(response => response.json())
+                .then(data => {
+                  if (!data.success) throw new Error(data.error || 'Error desconocido');
 
-                    if (this.checked) {
-                        estadoBadge.textContent = 'Completada';
-                        estadoBadge.classList.remove('bg-secondary');
-                        estadoBadge.classList.add('bg-success');
-                        card.querySelector('.card-title').classList.add('text-decoration-line-through', 'text-muted');
-                        const desc = card.querySelector('.card-text');
-                        if (desc) desc.classList.add('text-decoration-line-through');
-                    } else {
-                        estadoBadge.textContent = 'Pendiente';
-                        estadoBadge.classList.remove('bg-success');
-                        estadoBadge.classList.add('bg-secondary');
-                        card.querySelector('.card-title').classList.remove('text-decoration-line-through', 'text-muted');
-                        const desc = card.querySelector('.card-text');
-                        if (desc) desc.classList.remove('text-decoration-line-through');
+                  // 🔹 Modo 1: card grande
+                  const card = this.closest('.card');
+                  if (card) {
+                    const estadoBadge = card.querySelector('.estado-badge');
+                    const title = card.querySelector('.card-title');
+                    const desc = card.querySelector('.card-text');
+
+                    if (estadoBadge) {
+                      estadoBadge.textContent = completada ? 'Completada' : 'Pendiente';
+                      estadoBadge.classList.toggle('bg-success', completada);
+                      estadoBadge.classList.toggle('bg-secondary', !completada);
                     }
-                } else {
-                    alert('Error al actualizar el estado de la tarea');
-                    this.checked = !this.checked;
-                }
-            })
+
+                    if (title) title.classList.toggle('text-decoration-line-through', completada);
+                    if (title) title.classList.toggle('text-muted', completada);
+                    if (desc) desc.classList.toggle('text-decoration-line-through', completada);
+                  }
+
+                  // 🔹 Actualizar contador de tareas completadas
+                  const contador = document.getElementById('contador-tareas');
+                  if (contador) {
+                      // Parseamos los valores actuales
+                      let [actualCompletadas, total] = contador.textContent.split('/').map(Number);
+                      if (completada) {
+                          actualCompletadas += 1;
+                      } else {
+                          actualCompletadas -= 1;
+                      }
+                      contador.textContent = `${actualCompletadas}/${total}`;
+                  }
+                })
             .catch(error => {
                 console.error('Error:', error);
                 alert('Error al actualizar el estado de la tarea');
