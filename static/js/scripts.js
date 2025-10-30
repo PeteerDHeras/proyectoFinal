@@ -158,37 +158,39 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .then(response => response.json())
                 .then(data => {
-              if (!data.success) throw new Error(data.error || 'Error desconocido');
+                  if (!data.success) throw new Error(data.error || 'Error desconocido');
 
-              // 🔹 Modo 1: card grande
-              const card = this.closest('.card');
-              if (card) {
-                const estadoBadge = card.querySelector('.estado-badge');
-                const title = card.querySelector('.card-title');
-                const desc = card.querySelector('.card-text');
+                  // 🔹 Modo 1: card grande
+                  const card = this.closest('.card');
+                  if (card) {
+                    const estadoBadge = card.querySelector('.estado-badge');
+                    const title = card.querySelector('.card-title');
+                    const desc = card.querySelector('.card-text');
 
-                if (estadoBadge) {
-                  estadoBadge.textContent = completada ? 'Completada' : 'Pendiente';
-                  estadoBadge.classList.toggle('bg-success', completada);
-                  estadoBadge.classList.toggle('bg-secondary', !completada);
-                }
+                    if (estadoBadge) {
+                      estadoBadge.textContent = completada ? 'Completada' : 'Pendiente';
+                      estadoBadge.classList.toggle('bg-success', completada);
+                      estadoBadge.classList.toggle('bg-secondary', !completada);
+                    }
 
-                if (title) title.classList.toggle('text-decoration-line-through', completada);
-                if (title) title.classList.toggle('text-muted', completada);
-                if (desc) desc.classList.toggle('text-decoration-line-through', completada);
-              }
+                    if (title) title.classList.toggle('text-decoration-line-through', completada);
+                    if (title) title.classList.toggle('text-muted', completada);
+                    if (desc) desc.classList.toggle('text-decoration-line-through', completada);
+                  }
 
-              // 🔹 Modo 2: tareas para hoy (Tailwind)
-              const contenedor = this.closest('.flex.items-center');
-              if (contenedor) {
-                const nombre = contenedor.querySelector('p');
-                if (nombre) {
-                  nombre.classList.toggle('line-through', completada);
-                  nombre.classList.toggle('text-gray-500', completada);
-                  nombre.classList.toggle('text-gray-800', !completada);
-                }
-              }
-            })
+                  // 🔹 Actualizar contador de tareas completadas
+                  const contador = document.getElementById('contador-tareas');
+                  if (contador) {
+                      // Parseamos los valores actuales
+                      let [actualCompletadas, total] = contador.textContent.split('/').map(Number);
+                      if (completada) {
+                          actualCompletadas += 1;
+                      } else {
+                          actualCompletadas -= 1;
+                      }
+                      contador.textContent = `${actualCompletadas}/${total}`;
+                  }
+                })
             .catch(error => {
                 console.error('Error:', error);
                 alert('Error al actualizar el estado de la tarea');
