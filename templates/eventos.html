@@ -78,7 +78,12 @@
                                 </p>
                                 <p class="text-gray-500 text-sm font-normal">
                                     <span class="material-symbols-outlined text-sm align-middle mr-1">schedule</span>
-                                    {{ evento.Hora_evento }}
+                                    {%- set _hora = evento.Hora_evento|string -%}
+                                    {%- if _hora -%}
+                                        {{ _hora.split(':')[:2]|join(':') }}
+                                    {%- else -%}
+                                    
+                                    {%- endif -%}
                                 </p>
                             </div>
                         </div>

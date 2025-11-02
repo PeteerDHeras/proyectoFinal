@@ -97,9 +97,14 @@
 									<p class="text-gray-900 text-base font-medium leading-normal line-clamp-1">
 										{{ evento.Nombre }}
 									</p>
-									<p class="text-gray-500 text-sm font-normal leading-normal line-clamp-2">
-										 {{ evento.Hora_evento }}
-									</p>
+							 <p class="text-gray-500 text-sm font-normal leading-normal line-clamp-2">
+								 {%- set _hora = evento.Hora_evento|string -%}
+								 {%- if _hora -%}
+									{{ _hora.split(':')[:2]|join(':') }}
+								 {%- else -%}
+                                             
+								 {%- endif -%}
+							 </p>
 								</div>
 							</div>
 
