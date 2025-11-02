@@ -1,37 +1,107 @@
 {% extends "base.html" %}
 {% block title %}Eventos{% endblock %}
 {% block content %}
-<div class="container-sm mt-4">
-    <h2 class="mb-3">Eventos</h2>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+<script>
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    "primary": "#42A5F5",
+                    "background-light": "#F5F5F5",
+                    "background-dark": "#121212",
+                    "text-light": "#333333",
+                    "text-dark": "#FFFFFF"
+                },
+                fontFamily: {
+                    "display": ["Inter", "sans-serif"]
+                },
+                borderRadius: {
+                    "DEFAULT": "0.5rem",
+                    "lg": "0.75rem",
+                    "xl": "1rem",
+                    "full": "9999px"
+                },
+            },
+        },
+    }
+</script>
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+    }
+</style>
 
-    <a class="btn btn-success mb-3" href="{{ url_for('crear_evento_view') }}">Crear nuevo evento</a>
-
-    <div class="row row-cols-1 row-cols-md-2 g-3">
-        {% for evento in eventos %}
-        <div class="col">
-            <div class="card shadow-sm border-0 bg-body-secondary">
-                <div class="card-body py-2 px-3 d-flex justify-content-between align-items-center">
-                    <!-- Texto del evento -->
-                    <div class="flex-grow-1">
-                        <h6 class="card-title mb-1 fw-semibold text-dark">{{ evento.Nombre }}</h6>
-                        <p class="card-text mb-0 text-secondary small">
-                            <strong>Fecha:</strong> {{ evento.Fecha_evento }} — <strong>Hora:</strong> {{
-                            evento.Hora_evento }}
-                        </p>
+<main class="flex-1 p-8 bg-background-light text-text-light">
+    <div class="flex flex-col gap-8">
+        <!-- Barra de búsqueda -->
+        <div class="px-4 py-3">
+            <label class="flex flex-col min-w-40 h-12 w-full max-w-lg mx-auto">
+                <div class="flex w-full flex-1 items-stretch rounded-xl h-full shadow-sm">
+                    <div class="text-gray-500 flex border-r-0 bg-white items-center justify-center pl-4 rounded-l-xl">
+                        <span class="material-symbols-outlined">search</span>
                     </div>
+                    <input
+                        class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-text-light focus:outline-0 focus:ring-2 focus:ring-primary border-gray-300 bg-white focus:border-primary h-full placeholder:text-gray-400 px-4 rounded-l-none border-l-0 pl-2 text-base font-normal"
+                        placeholder="Buscar eventos por nombre" />
+                </div>
+            </label>
+        </div>
 
-                    <!-- Botones alineados a la derecha -->
-                    <div class="d-flex flex-shrink-0 gap-2 ms-3">
-                        <a class="btn btn-outline-light btn-sm text-dark border-dark"
-                            href="{{ url_for('editar_evento_view', id=evento.ID) }}">Editar</a>
-                        <form method="POST" action="{{ url_for('eliminar_evento_view', id=evento.ID) }}" class="m-0">
-                            <button class="btn btn-danger btn-sm" type="submit">Eliminar</button>
-                        </form>
+        <!-- Botón Crear Nuevo -->
+        <div class="px-4">
+            <a href="{{ url_for('crear_evento_view') }}"
+                class="inline-flex items-center justify-center rounded-lg px-4 py-2 bg-primary text-white hover:bg-primary/90 transition-colors">
+                <span class="material-symbols-outlined mr-2">add</span>
+                Crear nuevo evento
+            </a>
+        </div>
+
+        <!-- Grid de Eventos -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {% for evento in eventos %}
+            <div class="p-4 @container">
+                <div
+                    class="flex flex-col items-stretch justify-start rounded-xl @xl:flex-row @xl:items-start shadow-lg bg-white transition-shadow duration-300 hover:shadow-2xl hover:shadow-primary/20">
+                    <!-- <div class="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-t-xl @xl:rounded-l-xl @xl:rounded-t-none"
+                        style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAZ_KjxGRwCK38hWo0fYhIZug9rsrz-X2-vNAjadAui1Ze2H8vxVlHB8PXk8EObZOFGR4ajiqeJF3PsQUjjatrJBantZ9oQ0fJPZQO9Y8luyKKVsA9yC3DvEhzeykCfHlUbjW0xXIC73lF9p10nTC31kp6HDfrhrV6r39OG0ADJL24NkTwq7nYU1lzDrIiWhp5vG8Uqs9tjY-waOOvdmpQeofXCjshsPWDqyPd_089E1IdVKxWWw7QTOGNx4r7MPoy9tJaBM8ROqRI");'>
+                    </div> -->
+                    <div class="flex w-full min-w-72 grow flex-col items-stretch justify-center gap-2 p-4">
+                        <p class="text-text-light text-lg font-bold leading-tight">{{ evento.Nombre }}
+                        </p>
+                        <div class="flex flex-col gap-1 mt-2">
+                            <p class="text-gray-500 text-sm font-normal">
+                                <span class="material-symbols-outlined text-sm align-middle mr-1">calendar_today</span>
+                                {{ evento.Fecha_evento }}
+                            </p>
+                            <p class="text-gray-500 text-sm font-normal">
+                                <span class="material-symbols-outlined text-sm align-middle mr-1">schedule</span>
+                                {{ evento.Hora_evento }}
+                            </p>
+                        </div>
+                        <!-- Botones de acción -->
+                        <div class="flex gap-2 mt-4">
+                            <a href="{{ url_for('editar_evento_view', id=evento.ID) }}"
+                                class="flex items-center justify-center px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors text-sm">
+                                <span class="material-symbols-outlined text-sm mr-1">edit</span>
+                                Editar
+                            </a>
+                            <form method="POST" action="{{ url_for('eliminar_evento_view', id=evento.ID) }}"
+                                class="inline">
+                                <button type="submit"
+                                    class="flex items-center justify-center px-3 py-1.5 rounded-lg border border-red-300 text-red-600 hover:bg-red-50 transition-colors text-sm">
+                                    <span class="material-symbols-outlined text-sm mr-1">delete</span>
+                                    Eliminar
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
-</div>
+</main>
 {% endblock %}
