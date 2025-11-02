@@ -239,7 +239,45 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.tarea-checkbox').forEach(checkbox => {
+  // Live search helpers for Tareas and Eventos (debounced)
+  const debounce = (fn, ms = 150) => {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+  };
+
+  // Tareas: filter rows inside #tareas-list
+  const searchTareasInput = document.getElementById('search-tareas');
+  if (searchTareasInput) {
+    const tareasList = document.getElementById('tareas-list');
+    const filterTareas = () => {
+      const q = searchTareasInput.value.trim().toLowerCase();
+      if (!tareasList) return;
+      const rows = Array.from(tareasList.children);
+      rows.forEach(row => {
+        const text = (row.innerText || row.textContent || '').toLowerCase();
+        row.style.display = q === '' || text.includes(q) ? '' : 'none';
+      });
+    };
+    searchTareasInput.addEventListener('input', debounce(filterTareas, 150));
+  }
+
+  // Eventos: filter cards inside #eventos-grid
+  const searchEventosInput = document.getElementById('search-eventos');
+  if (searchEventosInput) {
+    const eventosGrid = document.getElementById('eventos-grid');
+    const filterEventos = () => {
+      const q = searchEventosInput.value.trim().toLowerCase();
+      if (!eventosGrid) return;
+      const cards = Array.from(eventosGrid.children);
+      cards.forEach(card => {
+        const text = (card.innerText || card.textContent || '').toLowerCase();
+        card.style.display = q === '' || text.includes(q) ? '' : 'none';
+      });
+    };
+    searchEventosInput.addEventListener('input', debounce(filterEventos, 150));
+  }
+
+  document.querySelectorAll('.tarea-checkbox').forEach(checkbox => {
         checkbox.addEventListener('change', function() {
             const tareaId = this.getAttribute('data-tarea-id');
             const completada = this.checked;

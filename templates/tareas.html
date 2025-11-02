@@ -43,7 +43,7 @@
                     <div class="text-gray-500 flex border-r-0 bg-white items-center justify-center pl-4 rounded-l-xl">
                         <span class="material-symbols-outlined">search</span>
                     </div>
-                    <input
+                    <input id="search-tareas"
                         class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-text-light focus:outline-0 focus:ring-2 focus:ring-primary border-gray-300 bg-white focus:border-primary h-full placeholder:text-gray-400 px-4 rounded-l-none border-l-0 pl-2 text-base font-normal"
                         placeholder="Buscar tareas por nombre" />
                 </div>
@@ -59,8 +59,8 @@
             </a>
         </div>
 
-        <!-- Lista de Tareas -->
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+    <!-- Lista de Tareas -->
+    <div id="tareas-list" class="bg-white rounded-xl shadow-sm overflow-hidden">
             {% for tarea in tareas %}
             <div class="flex items-center gap-4 p-4 hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
                 <!-- Checkbox -->

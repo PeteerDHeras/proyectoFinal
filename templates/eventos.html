@@ -43,7 +43,7 @@
                     <div class="text-gray-500 flex border-r-0 bg-white items-center justify-center pl-4 rounded-l-xl">
                         <span class="material-symbols-outlined">search</span>
                     </div>
-                    <input
+                    <input id="search-eventos"
                         class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-text-light focus:outline-0 focus:ring-2 focus:ring-primary border-gray-300 bg-white focus:border-primary h-full placeholder:text-gray-400 px-4 rounded-l-none border-l-0 pl-2 text-base font-normal"
                         placeholder="Buscar eventos por nombre" />
                 </div>
@@ -59,8 +59,8 @@
             </a>
         </div>
 
-        <!-- Grid de Eventos -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+    <!-- Grid de Eventos -->
+    <div id="eventos-grid" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {% for evento in eventos %}
             <div class="p-4 @container">
                 <div
