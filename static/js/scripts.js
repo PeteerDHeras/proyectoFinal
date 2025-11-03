@@ -238,6 +238,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 });
+
+// BARRA DE BÚSQUEDA EN VIVO PARA TAREAS Y EVENTOS
 document.addEventListener('DOMContentLoaded', function() {
   // Live search helpers for Tareas and Eventos (debounced)
   const debounce = (fn, ms = 150) => {
@@ -306,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
                       }
                   }
 
-                  // 🔹 Modo 1: card grande (para vista de tareas)
+                  // Modo 1: card grande (para vista de tareas)
                   const card = this.closest('.card');
                   if (card) {
                     const estadoBadge = card.querySelector('.estado-badge');
@@ -324,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (desc) desc.classList.toggle('text-decoration-line-through', completada);
                   }
 
-                  // 🔹 Actualizar contador de tareas completadas
+                  // Actualizar contador de tareas completadas
                   const contador = document.getElementById('contador-tareas');
                   if (contador) {
                       // Parseamos los valores actuales

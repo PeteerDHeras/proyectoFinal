@@ -1,14 +1,33 @@
+"""Aplicación Flask principal.
+
+Este fichero contiene las rutas y vistas del proyecto.
+He añadido comentarios explicativos y dejado las líneas de
+`@login_required` comentadas (con la marca "TODO: activar login_required")
+en cada ruta para poder activarlas fácilmente en el futuro.
+
+Notas:
+- Mantén la clave secreta en variables de entorno en producción.
+"""
+
 from datetime import datetime, time
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from functools import wraps
-from db import *
+from db import *  # funciones de acceso a datos: obtener_eventos, crear_tarea, etc.
 
-# ------------------ FLASK ------------------
+
+# ------------------ CONFIGURACIÓN FLASK ------------------
 app = Flask(__name__)
-app.secret_key = 'clave_secreta_segura'
+app.secret_key = 'clave_secreta_segura'  # cambiar en producción
 
 
+# ------------------ AUTORIZACIÓN (decorador) ------------------
 def login_required(f):
+    """Decorador para rutas que requieren sesión iniciada.
+
+    Actualmente se deja disponible; las rutas contienen la línea
+    `# @login_required  TODO: activar login_required` comentada para
+    que el equipo pueda activarla rápidamente cuando lo desee.
+    """
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'usuario' not in session:
@@ -17,16 +36,18 @@ def login_required(f):
     return decorated_function
 
 
-# ------------------ INICIO ------------------
+# ------------------ RUTAS PÚBLICAS BÁSICAS ------------------
+
 
 @app.route('/')
 def home():
+    """Redirige a la página de login por defecto."""
     return redirect(url_for('login'))
 
-# ------------------ AUTENTICACIÓN ------------------
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    """Maneja formulario de login y crea la sesión del usuario."""
     if request.method == 'POST':
         usuario = request.form['usuario']
         password = request.form['password']
@@ -36,15 +57,24 @@ def login():
         return render_template('login.html', error='Credenciales inválidas')
     return render_template('login.html')
 
+
 @app.route('/logout')
 def logout():
+    """Cierra la sesión del usuario."""
     session.pop('usuario', None)
     return redirect(url_for('login'))
+
 
 # ----------------- DASHBOARD -----------------
 
 @app.route('/dashboard')
+# @login_required                                                        TODO: activar login_required
 def dashboard():
+    """Vista principal que resume eventos y tareas para el usuario.
+
+    - Filtra eventos y tareas del día actual para mostrarlos en el dashboard.
+    - Recupera métricas semanales y eventos de mañana.
+    """
     eventos = obtener_eventos()
     tareas = obtener_tareas()
     completadas_semana, total_semana = obtener_resumen_semana()
@@ -84,7 +114,7 @@ def dashboard():
 @app.route('/calendar')
 # @login_required                                                        TODO: activar login_required
 def calendar():
-    # Página con FullCalendar; los eventos se obtienen desde /api/eventos
+    """Página con FullCalendar; los eventos se obtienen desde /api/eventos."""
     return render_template('calendar.html')
 
 
@@ -94,13 +124,22 @@ def calendar():
 @app.route('/eventos')
 # @login_required                                                        TODO: activar login_required
 def ver_eventos():
+    """Lista todos los eventos.
+
+    Plantilla: `eventos.html` espera una lista de eventos.
+    """
     eventos = obtener_eventos()
     return render_template('eventos.html', eventos=eventos)
+
 
 # Crear nuevo evento
 @app.route('/eventos/nuevo', methods=['GET', 'POST'])
 # @login_required                                                        TODO: activar login_required
 def crear_evento_view():
+    """Formulario para crear eventos. Si es POST crea el evento y redirige.
+
+    Soporta fecha y hora de inicio; fecha/hora de fin son opcionales.
+    """
     if request.method == 'POST':
         usuario_actual = session.get('usuario')
         user = obtener_usuario_por_nombre(usuario_actual)
@@ -117,38 +156,38 @@ def crear_evento_view():
         )
         return redirect(url_for('dashboard'))
 
-    # Capturar fecha preseleccionada si viene desde FullCalendar        
+    # Capturar fecha preseleccionada si viene desde FullCalendar
     fecha_preseleccionada = request.args.get('fecha', '')
     return render_template('nuevo_evento.html', fecha_preseleccionada=fecha_preseleccionada)
 
-# Editar evento
+
+# Editar evento (página completa eliminada; se usa modal en UI)
 @app.route('/eventos/<int:id>/editar', methods=['GET', 'POST'])
 # @login_required                                                        TODO: activar login_required
 def editar_evento_view(id):
-    # Full-page event editor removed; redirect to events list.
     return redirect(url_for('ver_eventos'))
 
 
 # Ver evento (modal fragment)
 @app.route('/eventos/<int:id>/ver')
+# @login_required                                                        TODO: activar login_required
 def ver_evento_view(id):
+    """Devuelve un fragmento modal con los datos normalizados del evento."""
     evento = next((e for e in obtener_eventos() if e['ID'] == id), None)
     if not evento:
         return ("Evento no encontrado", 404)
-    # Normalize fields for template (ensure times/dates are strings)
+
     def time_to_str(val):
+        """Normaliza diferentes tipos (str, time, timedelta) a 'HH:MM'."""
         if not val:
             return ''
-        # string like 'HH:MM:SS' or 'HH:MM'
         if isinstance(val, str):
             return val[:5]
-        # datetime.time
         try:
             if isinstance(val, time):
                 return val.strftime('%H:%M')
         except Exception:
             pass
-        # timedelta -> convert to HH:MM
         try:
             if hasattr(val, 'total_seconds'):
                 total = int(val.total_seconds())
@@ -159,22 +198,76 @@ def ver_evento_view(id):
             pass
         return str(val)[:5]
 
-    evento_display = dict(evento)  # shallow copy
+    evento_display = dict(evento)
     evento_display['Hora_evento'] = time_to_str(evento.get('Hora_evento'))
     evento_display['Hora_fin'] = time_to_str(evento.get('Hora_fin'))
-    # Ensure date strings
     if evento_display.get('Fecha_evento') is not None:
         evento_display['Fecha_evento'] = str(evento_display['Fecha_evento'])
     if evento_display.get('Fecha_fin') is not None:
         evento_display['Fecha_fin'] = str(evento_display['Fecha_fin'])
 
-    # Render generic modal fragment for items
     return render_template('modal_fragment.html', item=evento_display, tipo='evento')
 
 
-# Ver tarea (modal fragment)
+# Eliminar evento
+@app.route('/eventos/<int:id>/eliminar', methods=['POST'])
+# @login_required                                                        TODO: activar_login_required
+def eliminar_evento_view(id):
+    """Elimina un evento y redirige a la lista de eventos."""
+    eliminar_evento(id)
+    return redirect(url_for('ver_eventos'))
+
+
+# ------------------ TAREAS (Vistas y API) ------------------
+
+
+@app.route('/tareas')
+# @login_required                                                        TODO: activar_login_required
+def ver_tareas():
+    """Lista de tareas."""
+    tareas = obtener_tareas()
+    return render_template('tareas.html', tareas=tareas)
+
+
+@app.route('/tareas/nueva', methods=['GET', 'POST'])
+# @login_required                                                        TODO: activar_login_required
+def crear_tarea_view():
+    """Crear nueva tarea desde formulario."""
+    if request.method == 'POST':
+        usuario_actual = session.get('usuario')
+        user = obtener_usuario_por_nombre(usuario_actual)
+        creador_id = user['ID'] if user else 1
+
+        crear_tarea(
+            nombre=request.form['nombre'],
+            descripcion=request.form.get('descripcion', ''),
+            fecha_limite=request.form['fecha_limite'],
+            prioridad=request.form['prioridad'],
+            creador_id=creador_id,
+            estado=0  # Por defecto
+        )
+        return redirect(url_for('ver_tareas'))
+
+    return render_template('nueva_tarea.html')
+
+
+@app.route('/tareas/<int:id>/editar', methods=['GET', 'POST'])
+# @login_required                                                        TODO: activar_login_required
+def editar_tarea_view(id):
+    return redirect(url_for('ver_tareas'))
+
+
+@app.route('/tareas/<int:id>/eliminar', methods=['POST'])
+# @login_required                                                        TODO: activar_login_required
+def eliminar_tarea_view(id):
+    eliminar_tarea(id)
+    return redirect(url_for('ver_tareas'))
+
+
 @app.route('/tareas/<int:id>/ver')
+# @login_required                                                        TODO: activar_login_required
 def ver_tarea_view(id):
+    """Fragmento/modal para ver detalles de una tarea (normaliza campos)."""
     tarea = next((t for t in obtener_tareas() if t['ID'] == id), None)
     if not tarea:
         return ("Tarea no encontrada", 404)
@@ -190,24 +283,35 @@ def ver_tarea_view(id):
     tarea_display.setdefault('Hora_evento', '')
     tarea_display.setdefault('Fecha_fin', '')
     tarea_display.setdefault('Hora_fin', '')
-
-    # Ensure prioridad and estado keys exist for template
     tarea_display.setdefault('Prioridad', tarea_display.get('Prioridad', 1))
     tarea_display.setdefault('Estado', tarea_display.get('Estado', 0))
 
     return render_template('ver_tarea.html', tarea=tarea_display)
 
-# Eliminar evento
-@app.route('/eventos/<int:id>/eliminar', methods=['POST'])
-# @login_required                                                        TODO: activar login_required
-def eliminar_evento_view(id):
-    eliminar_evento(id)
-    return redirect(url_for('ver_eventos'))
+
+# API para cambiar estado con checkbox (AJAX)
+@app.route('/tareas/<int:id>/estado', methods=['POST'])
+# @login_required                                                        TODO: activar_login_required
+def actualizar_estado_tarea_view(id):
+    data = request.get_json()
+    estado = int(data.get('estado', 0))  # Espera 0 o 1
+
+    try:
+        actualizar_estado_tarea(id, estado)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 # ------------------ API JSON EVENTOS ------------------
 
 @app.route('/api/eventos')
+# @login_required                                                        TODO: activar_login_required
 def api_eventos():
+    """Devuelve eventos en formato JSON para FullCalendar.
+
+    Actualmente filtra por eventos del día (comportamiento previo).
+    """
     eventos = obtener_eventos()
     eventos_json = []
 
@@ -234,8 +338,12 @@ def api_eventos():
 
 
 @app.route('/api/eventos/<int:evento_id>', methods=['PUT'])
-# @login_required                                                        TODO: activar login_required
+# @login_required                                                        TODO: activar_login_required
 def actualizar_evento_api(evento_id):
+    """API para actualizar evento desde cliente (JSON PUT).
+
+    Valida fechas básicas y llama a modificar_evento.
+    """
     data = request.get_json()
     if not data.get("fecha_evento"):
         return jsonify({"error": "Falta fecha_evento"}), 400
@@ -264,7 +372,6 @@ def actualizar_evento_api(evento_id):
         fecha_fin,
         hora_fin
     )
-    # retrieve updated event and normalize fields for JSON response
     eventos = obtener_eventos()
     evento = next((e for e in eventos if e['ID'] == evento_id), None)
     if not evento:
@@ -302,7 +409,9 @@ def actualizar_evento_api(evento_id):
 
 
 @app.route('/api/tareas/<int:tarea_id>', methods=['PUT'])
+# @login_required                                                        TODO: activar_login_required
 def actualizar_tarea_api(tarea_id):
+    """API para actualizar una tarea vía JSON (PUT)."""
     data = request.get_json() or {}
     # Map payload to task fields
     nombre = data.get('nombre', '')
@@ -328,10 +437,10 @@ def actualizar_tarea_api(tarea_id):
             return jsonify({'error': 'Tarea actualizada pero no encontrada'}), 500
 
         tarea_display = dict(tarea)
-        # normalize date field name to help client
+
         if tarea_display.get('Fecha_limite') is not None:
             tarea_display['Fecha_limite'] = str(tarea_display['Fecha_limite'])
-        # keep keys consistent
+
         tarea_display.setdefault('Nombre', tarea_display.get('Nombre', ''))
         tarea_display.setdefault('Descripcion', tarea_display.get('Descripcion', ''))
         tarea_display.setdefault('Prioridad', tarea_display.get('Prioridad', 1))
@@ -341,88 +450,6 @@ def actualizar_tarea_api(tarea_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-
-# MAPEO EN INGLES                                                   TODO: Mirar si vale la pena mantener estas rutas en inglés
-@app.route('/events')
-def events():
-    # Use existing Spanish view
-    return redirect(url_for('ver_eventos'))
-
-
-@app.route('/events/new', methods=['GET', 'POST'])
-def new_event():
-    return crear_evento_view()
-
-
-@app.route('/events/<int:id>/edit', methods=['GET', 'POST'])
-def edit_event(id):
-    # Full-page edit flow was removed in favor of modal editor.
-    # Redirect to events listing (UI should open modal instead).
-    return redirect(url_for('ver_eventos'))
-
-
-@app.route('/events/<int:id>/delete', methods=['POST'])
-def delete_event(id):
-    return eliminar_evento_view(id)
-
-
-
-
-
-# ------------------ TAREAS ------------------
-
-
-@app.route('/tareas')
-# @login_required
-def ver_tareas():
-    tareas = obtener_tareas()
-    return render_template('tareas.html', tareas=tareas)
-
-@app.route('/tareas/nueva', methods=['GET', 'POST'])
-# @login_required
-def crear_tarea_view():
-    if request.method == 'POST':
-        usuario_actual = session.get('usuario')
-        user = obtener_usuario_por_nombre(usuario_actual)
-        creador_id = user['ID'] if user else 1
-
-        crear_tarea(
-            nombre=request.form['nombre'],
-            descripcion=request.form.get('descripcion', ''),
-            fecha_limite=request.form['fecha_limite'],
-            prioridad=request.form['prioridad'],
-            creador_id=creador_id,
-            estado=0  # Por defecto
-        )
-        return redirect(url_for('ver_tareas'))
-    
-    return render_template('nueva_tarea.html')
-
-@app.route('/tareas/<int:id>/editar', methods=['GET', 'POST'])
-# @login_required
-def editar_tarea_view(id):
-    # Full-page task editor removed in favor of modal.
-    # For backward compatibility redirect to tasks listing.
-    return redirect(url_for('ver_tareas'))
-
-@app.route('/tareas/<int:id>/eliminar', methods=['POST'])
-# @login_required
-def eliminar_tarea_view(id):
-    eliminar_tarea(id)
-    return redirect(url_for('ver_tareas'))
-
-# API para cambiar estado con checkbox
-@app.route('/tareas/<int:id>/estado', methods=['POST'])
-def actualizar_estado_tarea_view(id):
-    data = request.get_json()
-    estado = int(data.get('estado', 0))  # Espera 0 o 1
-    
-    try:
-        actualizar_estado_tarea(id, estado)
-        return jsonify({'success': True})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, debug=True) # Escuchar en todas las interfaces
+    # Nota: en producción no usar debug=True y exponer la app directamente.
+    app.run(host="0.0.0.0", port=5001, debug=True)  # Escuchar en todas las interfaces, puerto 5001(portatil)

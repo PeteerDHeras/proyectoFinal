@@ -7,8 +7,8 @@ import bcrypt
 
 def get_connection():
     return mysql.connector.connect(
-        host="192.168.0.120",                   # TODO: Cambiar de localhost a "myplanner.com" para simulación producción
-        user="pdelasheras",                     # TODO: Hacer que esta información viaje en ssl (Apache)
+        host="localhost",                   # 192.168.0.120 o localhost (portatil)
+        user="pdelasheras",                     
         password="pdelasheras",
         database="myplanner_db"
     )
@@ -76,8 +76,7 @@ def modificar_evento(evento_id, nombre, fecha_evento, hora_evento, fecha_fin=Non
 # ELIMINAR EVENTO
 def eliminar_evento(evento_id):
     conn = get_connection()
-    # Conexión a la base de datos
-
+    cursor = conn.cursor()
     cursor.execute("DELETE FROM EVENTOS WHERE ID=%s", (evento_id,))
     conn.commit()
     conn.close()
@@ -193,63 +192,3 @@ def obtener_eventos_manana():
     conn.close()
     return cantidad
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# FUNCIONES PARA GESTIONAR SUBTAREAS ------------------------------ TODO: IMPLEMENTAR EN APP.PY (SI ES NECESARIO)
-
-# CREAR SUBTAREA
-def crear_subtarea(nombre, descripcion, fecha_limite, tarea_padre_id, creador_id):
-    conn = get_connection()
-    cursor = conn.cursor()
-    query = """
-        INSERT INTO SUBTAREAS (Nombre, Descripcion, Fecha_limite, tareaPadre, creadorSub)
-        VALUES (%s, %s, %s, %s, %s)
-    """
-    cursor.execute(query, (nombre, descripcion, fecha_limite, tarea_padre_id, creador_id))
-    conn.commit()
-    conn.close()
-
-# MODIFICAR SUBTAREA
-def modificar_subtarea(subtarea_id, nombre, descripcion, fecha_limite):
-    conn = get_connection()
-    cursor = conn.cursor()
-    query = """
-        UPDATE SUBTAREAS
-        SET Nombre=%s, Descripcion=%s, Fecha_limite=%s
-        WHERE ID=%s
-    """
-    cursor.execute(query, (nombre, descripcion, fecha_limite, subtarea_id))
-    conn.commit()
-    conn.close()
-
-# ELIMINAR SUBTAREA
-def eliminar_subtarea(subtarea_id):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM SUBTAREAS WHERE ID=%s", (subtarea_id,))
-    conn.commit()
-    conn.close()
-    
-# OBTENER SUBTAREAS
-def obtener_subtareas():
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM SUBTAREAS")
-    subtareas = cursor.fetchall()
-    conn.close()
-    return subtareas

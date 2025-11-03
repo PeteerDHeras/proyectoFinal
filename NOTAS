@@ -1,306 +1,51 @@
 IDEAS PARA FUNCIONALIDADES:
 
-
-1- Tareas
-    - Tras la lista de tareas, poder clic y abrir la tarea con mas info.
-    * Que se pueda ir desde Dashboard
-    
-2- Subtareas
-    - Dentro de la tarea que salgan las subtareas, que se puedan marcar como hechas.
-
-
-═══════════════════════════════════════════════════════════════════════════════
-  CONFIGURACIÓN DE DOMINIO LOCAL PARA MYPLANNER
-═══════════════════════════════════════════════════════════════════════════════
-
-Este documento explica cómo configurar un dominio local (myplanner.local) para
-acceder a tu aplicación MyPlanner en lugar de usar la IP 192.168.0.120.
-
-═══════════════════════════════════════════════════════════════════════════════
-  1. CONFIGURAR EL ARCHIVO HOSTS EN WINDOWS (Cliente)
-═══════════════════════════════════════════════════════════════════════════════
-
-El archivo hosts permite mapear un nombre de dominio a una IP sin necesidad de 
-un servidor DNS.
-
-UBICACIÓN DEL ARCHIVO:
-  C:\Windows\System32\drivers\etc\hosts
-
-PASOS PARA EDITARLO:
-
-1. Abre el Bloc de notas como Administrador:
-   - Busca "Bloc de notas" en el menú Inicio
-   - Clic derecho → "Ejecutar como administrador"
-
-2. En el Bloc de notas:
-   - Archivo → Abrir
-   - Navega a: C:\Windows\System32\drivers\etc
-   - Cambia el filtro de archivos de "Documentos de texto (*.txt)" a "Todos los archivos (*.*)"
-   - Selecciona el archivo "hosts" y ábrelo
-
-3. Al final del archivo, añade esta línea:
-
-   192.168.0.120    myplanner.local
-
-4. Guarda el archivo (Ctrl + S)
-
-5. Verifica que funciona abriendo PowerShell y ejecutando:
-   
-   ping myplanner.local
-
-   Deberías ver respuestas desde 192.168.0.120
-
-
-EJEMPLO DE ARCHIVO HOSTS COMPLETO:
-───────────────────────────────────────────────────────────────────────────────
-# Copyright (c) 1993-2009 Microsoft Corp.
-#
-# This is a sample HOSTS file used by Microsoft TCP/IP for Windows.
-#
-# This file contains the mappings of IP addresses to host names. Each
-# entry should be kept on an individual line. The IP address should
-# be placed in the first column followed by the corresponding host name.
-# The IP address and the host name should be separated by at least one
-# space.
-#
-# Additionally, comments (such as these) may be inserted on individual
-# lines or following the machine name denoted by a '#' symbol.
-#
-# For example:
-#
-#      102.54.94.97     rhino.acme.com          # source server
-#       38.25.63.10     x.acme.com              # x client host
-
-# localhost name resolution is handled within DNS itself.
-#	127.0.0.1       localhost
-#	::1             localhost
-
-# MyPlanner - Proyecto Final DAW
-192.168.0.120    myplanner.local
-───────────────────────────────────────────────────────────────────────────────
-
-
-═══════════════════════════════════════════════════════════════════════════════
-  2. CONFIGURAR APACHE EN LA MÁQUINA VIRTUAL (Servidor)
-═══════════════════════════════════════════════════════════════════════════════
-
-En tu VM donde está Apache y MySQL, necesitas configurar un VirtualHost.
-
-UBICACIÓN TÍPICA DE CONFIGURACIÓN APACHE:
-  - Debian/Ubuntu: /etc/apache2/sites-available/
-  - CentOS/RHEL: /etc/httpd/conf.d/
-
-PASOS:
-
-1. Conéctate a tu VM por SSH o consola
-
-2. Crea un archivo de configuración para tu sitio:
-
-   sudo nano /etc/apache2/sites-available/myplanner.conf
-
-3. Añade esta configuración (ajusta las rutas según tu instalación):
-
-───────────────────────────────────────────────────────────────────────────────
-<VirtualHost *:80>
-    ServerName myplanner.local
-    ServerAdmin pdelasheras@myplanner.local
-
-    # Ruta donde está tu aplicación Flask
-    DocumentRoot /var/www/myplanner
-
-    # Configuración para proxy reverso a Flask (puerto 5000)
-    ProxyPreserveHost On
-    ProxyPass / http://127.0.0.1:5000/
-    ProxyPassReverse / http://127.0.0.1:5000/
-
-    # Logs
-    ErrorLog ${APACHE_LOG_DIR}/myplanner_error.log
-    CustomLog ${APACHE_LOG_DIR}/myplanner_access.log combined
-
-    # Configuración adicional
-    <Directory /var/www/myplanner>
-        Require all granted
-    </Directory>
-</VirtualHost>
-───────────────────────────────────────────────────────────────────────────────
-
-4. Habilita los módulos necesarios de Apache:
-
-   sudo a2enmod proxy
-   sudo a2enmod proxy_http
-   sudo a2enmod headers
-
-5. Habilita el sitio:
-
-   sudo a2ensite myplanner.conf
-
-6. Verifica la configuración:
-
-   sudo apache2ctl configtest
-
-7. Reinicia Apache:
-
-   sudo systemctl restart apache2
-
-8. Asegúrate de que Flask esté corriendo en el puerto 5000:
-
-   # En tu directorio del proyecto
-   python3 app.py
-
-
-═══════════════════════════════════════════════════════════════════════════════
-  3. CONFIGURAR MYSQL/MARIADB PARA ACEPTAR CONEXIONES
-═══════════════════════════════════════════════════════════════════════════════
-
-Por defecto, MySQL solo acepta conexiones desde localhost. Necesitas permitir
-conexiones desde otras IPs.
-
-PASOS:
-
-1. Edita el archivo de configuración de MySQL:
-
-   sudo nano /etc/mysql/mariadb.conf.d/50-server.cnf
-
-2. Busca la línea:
-   
-   bind-address = 127.0.0.1
-
-3. Cámbiala a:
-
-   bind-address = 0.0.0.0
-
-   (Esto permite conexiones desde cualquier IP. Para mayor seguridad, 
-    usa la IP específica de tu red)
-
-4. Guarda y reinicia MySQL:
-
-   sudo systemctl restart mariadb
-
-5. Verifica que el usuario tiene permisos remotos:
-
-   sudo mysql -u root -p
-
-   En el prompt de MySQL:
-
-   USE mysql;
-   SELECT host, user FROM user WHERE user = 'pdelasheras';
-
-   Si solo aparece 'localhost', añade permisos:
-
-   GRANT ALL PRIVILEGES ON myplanner_db.* TO 'pdelasheras'@'%' IDENTIFIED BY 'pdelasheras';
-   FLUSH PRIVILEGES;
-   EXIT;
-
-
-═══════════════════════════════════════════════════════════════════════════════
-  4. ACTUALIZAR db.py PARA USAR EL DOMINIO
-═══════════════════════════════════════════════════════════════════════════════
-
-En tu archivo db.py, cambia:
-
-    host="192.168.0.120"
-
-Por:
-
-    host="myplanner.local"
-
-Esto se hace en la función get_connection().
-
-
-═══════════════════════════════════════════════════════════════════════════════
-  5. VERIFICACIÓN FINAL
-═══════════════════════════════════════════════════════════════════════════════
-
-1. Desde Windows, abre un navegador y accede a:
-   
-   http://myplanner.local:5000
-
-   (Si configuraste Apache correctamente, también funcionará sin el :5000)
-
-2. Verifica los logs de Apache si hay problemas:
-
-   sudo tail -f /var/log/apache2/myplanner_error.log
-
-3. Verifica las conexiones MySQL:
-
-   sudo netstat -tulpn | grep mysql
-
-
-═══════════════════════════════════════════════════════════════════════════════
-  6. CONFIGURACIÓN ADICIONAL CON SSL (OPCIONAL)
-═══════════════════════════════════════════════════════════════════════════════
-
-Para simular un entorno de producción con HTTPS, puedes generar un certificado
-autofirmado:
-
-1. Genera el certificado:
-
-   sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-     -keyout /etc/ssl/private/myplanner.key \
-     -out /etc/ssl/certs/myplanner.crt
-
-2. Crea un nuevo VirtualHost en el puerto 443:
-
-   sudo nano /etc/apache2/sites-available/myplanner-ssl.conf
-
-3. Añade:
-
-───────────────────────────────────────────────────────────────────────────────
-<VirtualHost *:443>
-    ServerName myplanner.local
-    ServerAdmin pdelasheras@myplanner.local
-
-    SSLEngine on
-    SSLCertificateFile /etc/ssl/certs/myplanner.crt
-    SSLCertificateKeyFile /etc/ssl/private/myplanner.key
-
-    ProxyPreserveHost On
-    ProxyPass / http://127.0.0.1:5000/
-    ProxyPassReverse / http://127.0.0.1:5000/
-
-    ErrorLog ${APACHE_LOG_DIR}/myplanner_ssl_error.log
-    CustomLog ${APACHE_LOG_DIR}/myplanner_ssl_access.log combined
-</VirtualHost>
-───────────────────────────────────────────────────────────────────────────────
-
-4. Habilita SSL:
-
-   sudo a2enmod ssl
-   sudo a2ensite myplanner-ssl.conf
-   sudo systemctl restart apache2
-
-5. Accede desde Windows:
-
-   https://myplanner.local
-
-   (Aceptarás la advertencia del certificado autofirmado)
-
-
-═══════════════════════════════════════════════════════════════════════════════
-  SOLUCIÓN DE PROBLEMAS COMUNES
-═══════════════════════════════════════════════════════════════════════════════
-
-PROBLEMA: No resuelve myplanner.local
-SOLUCIÓN: Verifica que guardaste el archivo hosts correctamente.
-          Ejecuta: ipconfig /flushdns en PowerShell
-
-PROBLEMA: Apache no inicia
-SOLUCIÓN: Verifica errores con: sudo apache2ctl configtest
-          Revisa logs: sudo tail -f /var/log/apache2/error.log
-
-PROBLEMA: No conecta a la base de datos
-SOLUCIÓN: Verifica que MySQL acepta conexiones remotas (bind-address)
-          Verifica permisos del usuario
-          Verifica firewall: sudo ufw allow 3306
-
-PROBLEMA: Error 502 Bad Gateway
-SOLUCIÓN: Flask no está corriendo o está en puerto incorrecto
-          Verifica que app.py esté ejecutándose: ps aux | grep python
-
-═══════════════════════════════════════════════════════════════════════════════
-  FIN DEL DOCUMENTO
-═══════════════════════════════════════════════════════════════════════════════
-
-Autor: Pedro José de las Heras Enseñat
-Proyecto: MyPlanner - Proyecto Final DAW
-Fecha: 2025
+1. IA Para generar eventos o tareas
+2. Integración con Google Calendar o similar
+3. Notificaciones por email o SMS
+4. Modo oscuro
+5. Filtros avanzados para eventos y tareas
+6. Compartir eventos o tareas con otros usuarios
+7. Adjuntar archivos a eventos o tareas
+8. Estadísticas y reportes de productividad
+9. Plantillas para eventos o tareas recurrentes
+10. Eventos duplicados en el tiempo
+
+VALIDACIONES:
+
+1. Tarea o evento pasado de fecha no deja crearse
+   - modal
+   - Crear_evento
+   - Crear_tarea
+2. Campos obligatorios no pueden estar vacíos
+3. Formato de fecha y hora correcto
+4. Usuario autenticado para crear, editar o eliminar eventos y tareas
+
+
+
+
+# ------------------ MAPEO EN INGLÉS (compatibilidad) ------------------
+@app.route('/events')
+# @login_required                                                        TODO: activar_login_required
+def events():
+    # Use existing Spanish view
+    return redirect(url_for('ver_eventos'))
+
+
+@app.route('/events/new', methods=['GET', 'POST'])
+# @login_required                                                        TODO: activar_login_required
+def new_event():
+    return crear_evento_view()
+
+
+@app.route('/events/<int:id>/edit', methods=['GET', 'POST'])
+# @login_required                                                        TODO: activar_login_required
+def edit_event(id):
+    # Full-page edit flow was removed in favor of modal editor.
+    return redirect(url_for('ver_eventos'))
+
+
+@app.route('/events/<int:id>/delete', methods=['POST'])
+# @login_required                                                        TODO: activar_login_required
+def delete_event(id):
+    return eliminar_evento_view(id)
