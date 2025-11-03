@@ -36,6 +36,7 @@
 
 <main class="flex-1 p-8 bg-background-light text-text-light">
     <div class="flex flex-col gap-8">
+
         <!-- Barra de búsqueda -->
         <div class="px-4 py-3">
             <label class="flex flex-col min-w-40 h-12 w-full max-w-lg mx-auto">
@@ -63,11 +64,14 @@
     <div id="eventos-grid" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {% for evento in eventos %}
             <div class="p-4 @container">
-                <div
-                    class="flex flex-col items-stretch justify-start rounded-xl @xl:flex-row @xl:items-start shadow-lg bg-white transition-shadow duration-300 hover:shadow-2xl hover:shadow-primary/20">
-                    <!-- <div class="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-t-xl @xl:rounded-l-xl @xl:rounded-t-none"
+
+                <!-- Evento -->
+                <div class="flex flex-col items-stretch justify-start rounded-xl @xl:flex-row @xl:items-start shadow-lg bg-white transition-shadow duration-300 hover:shadow-2xl hover:shadow-primary/20">
+                    
+                    <!-- Imagen del evento (default) -->
+                    <div class="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-t-xl @xl:rounded-l-xl @xl:rounded-t-none"
                         style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAZ_KjxGRwCK38hWo0fYhIZug9rsrz-X2-vNAjadAui1Ze2H8vxVlHB8PXk8EObZOFGR4ajiqeJF3PsQUjjatrJBantZ9oQ0fJPZQO9Y8luyKKVsA9yC3DvEhzeykCfHlUbjW0xXIC73lF9p10nTC31kp6HDfrhrV6r39OG0ADJL24NkTwq7nYU1lzDrIiWhp5vG8Uqs9tjY-waOOvdmpQeofXCjshsPWDqyPd_089E1IdVKxWWw7QTOGNx4r7MPoy9tJaBM8ROqRI");'>
-                    </div> -->
+                    </div>
                     <div class="flex w-full min-w-72 grow flex-col xl:flex-row xl:items-start xl:justify-between items-stretch gap-2 p-4">
                         <div class="flex flex-col gap-2">
                             <p class="text-text-light text-lg font-bold leading-tight text-left">{{ evento.Nombre }}</p>
@@ -87,6 +91,7 @@
                                 </p>
                             </div>
                         </div>
+                        
                         <!-- Botones de acción (a la derecha) -->
                         <div class="flex gap-2 mt-4 xl:mt-0 items-center">
                             <button data-id="{{ evento.ID }}" data-type="evento" class="btn-view-event flex items-center justify-center px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors text-sm">

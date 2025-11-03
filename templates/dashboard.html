@@ -27,15 +27,20 @@
 	}
 </script>
 
+<!-- Panel Principal -->
 <div class="container-fluid">
 	<header class="flex flex-wrap justify-between items-center gap-4 mb-8">
 		<p class="text-gray-900 text-4xl font-black leading-tight tracking-tighter">Dashboard</p>
 		<div class="flex items-center gap-4">
+
+			<!-- Nuevo evento -->
 			<a class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium leading-normal px-4 py-2 rounded-lg shadow-sm"
 				href="{{ url_for('crear_evento_view') }}">
 				<span class="material-symbols-outlined">add_circle</span>
 				Nuevo Evento
 			</a>
+
+			<!-- Nueva tarea -->
 			<a class="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium leading-normal px-4 py-2 rounded-lg shadow-sm"
 				href="{{ url_for('crear_tarea_view') }}">
 				<span class="material-symbols-outlined">add_task</span>
@@ -46,12 +51,14 @@
 
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 		<section class="lg:col-span-2 flex flex-col gap-8">
-			<!-- Semana de un vistazo -->
+
+			<!-- Resumen semanal -->
 			<div class="bg-card-light p-6 rounded-xl shadow-sm flex flex-col items-start gap-4">
 				<h2 class="text-gray-900 text-xl font-bold leading-tight tracking-tight">
 					Resumen semanal
 				</h2>
 
+				<!-- Tareas completadas/Totales -->
 				<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
 					<div class="bg-primary/10 p-3 rounded-lg flex flex-col items-start justify-center">
 						<p class="text-gray-600 text-sm font-medium">Tareas Completadas</p>
@@ -59,6 +66,7 @@
 							{{ completadas_semana }}/{{ total_semana }}
 						</p>
 					</div>
+					<!-- Eventos dia siguiente -->
 					<div class="bg-yellow-500/10 p-3 rounded-lg flex flex-col items-start justify-center">
 						<p class="text-gray-600 text-sm font-medium">Eventos Mañana</p>
 						<p class="text-yellow-500 text-3xl font-bold">
@@ -74,49 +82,53 @@
 					Próximos Eventos Hoy
 				</h2>
 
+				<!-- Lista de eventos hoy -->
 				<div class="flex flex-col gap-2 w-full">
 					{% if eventos_hoy %}
-						{% for evento in eventos_hoy %}
-						<div class="flex items-center gap-4 bg-card-light px-4 min-h-[72px] py-2 justify-between border-b border-gray-200 last:border-b-0">
-							<div class="flex items-center gap-4">
-								<div class="text-gray-600 flex items-center justify-center rounded-lg bg-gray-100 shrink-0 size-12">
-									<span class="material-symbols-outlined">
+					{% for evento in eventos_hoy %}
+					<div
+						class="flex items-center gap-4 bg-card-light px-4 min-h-[72px] py-2 justify-between border-b border-gray-200 last:border-b-0">
+						<div class="flex items-center gap-4">
+							<div
+								class="text-gray-600 flex items-center justify-center rounded-lg bg-gray-100 shrink-0 size-12">
+								<span class="material-symbols-outlined">
 									{% if 'reunión' in evento.Nombre|lower %}
-										groups
+									groups
 									{% elif 'llamada' in evento.Nombre|lower or 'call' in evento.Nombre|lower %}
-										phone
+									phone
 									{% elif 'diseño' in evento.Nombre|lower %}
-										design_services
+									design_services
 									{% else %}
-										event
+									event
 									{% endif %}
-									</span>
-								</div>
-
-								<div class="flex flex-col justify-center items-start">
-									<p class="text-gray-900 text-base font-medium leading-normal line-clamp-1">
-										{{ evento.Nombre }}
-									</p>
-							 <p class="text-gray-500 text-sm font-normal leading-normal line-clamp-2">
-								 {%- set _hora = evento.Hora_evento|string -%}
-								 {%- if _hora -%}
-									{{ _hora.split(':')[:2]|join(':') }}
-								 {%- else -%}
-                                             
-								 {%- endif -%}
-							 </p>
-								</div>
+								</span>
 							</div>
 
-							<div class="shrink-0">
-								<button data-id="{{ evento.ID }}" data-type="evento" class="link-view-event text-primary text-sm font-medium leading-normal hover:underline bg-transparent border-0 p-0">
-									Ver Detalles
-								</button>
+							<div class="flex flex-col justify-center items-start">
+								<p class="text-gray-900 text-base font-medium leading-normal line-clamp-1">
+									{{ evento.Nombre }}
+								</p>
+								<p class="text-gray-500 text-sm font-normal leading-normal line-clamp-2">
+									{%- set _hora = evento.Hora_evento|string -%}
+									{%- if _hora -%}
+									{{ _hora.split(':')[:2]|join(':') }}
+									{%- else -%}
+
+									{%- endif -%}
+								</p>
 							</div>
 						</div>
-						{% endfor %}
+
+						<div class="shrink-0">
+							<button data-id="{{ evento.ID }}" data-type="evento"
+								class="link-view-event text-primary text-sm font-medium leading-normal hover:underline bg-transparent border-0 p-0">
+								Ver Detalles
+							</button>
+						</div>
+					</div>
+					{% endfor %}
 					{% else %}
-						<p class="text-gray-500 text-sm">No hay eventos hoy.</p>
+					<p class="text-gray-500 text-sm">No hay eventos hoy.</p>
 					{% endif %}
 				</div>
 
@@ -130,48 +142,51 @@
 			</div>
 		</section>
 
+		<!-- Barra lateral Tareas -->
 		<aside class="flex flex-col gap-8">
+
 			<!-- Tareas para Hoy -->
 			<div class="bg-card-light p-6 rounded-xl shadow-sm flex flex-col items-start gap-4">
 				<h2 class="text-gray-900 text-[22px] font-bold leading-tight tracking-[-0.015em]">
 					Tareas para Hoy
 				</h2>
 
+				<!-- Lista de tareas hoy -->
 				<div class="flex flex-col gap-4 w-full">
 					{% if tareas_hoy %}
-						{% for tarea in tareas_hoy %}
-						<div class="flex items-center gap-3 w-full">
-							<input type="checkbox"
-								class="tarea-checkbox h-5 w-5 rounded border-gray-300 bg-gray-50 text-primary focus:ring-primary focus:ring-offset-background-light cursor-pointer"
-								id="tarea-{{ tarea.ID }}"
-								data-tarea-id="{{ tarea.ID }}"
-								{% if tarea.Estado == 1 %}checked{% endif %} />
+					{% for tarea in tareas_hoy %}
+					<div class="flex items-center gap-3 w-full">
+						<input type="checkbox"
+							class="tarea-checkbox h-5 w-5 rounded border-gray-300 bg-gray-50 text-primary focus:ring-primary focus:ring-offset-background-light cursor-pointer"
+							id="tarea-{{ tarea.ID }}" data-tarea-id="{{ tarea.ID }}" {% if tarea.Estado==1 %}checked{%
+							endif %} />
 
-							<p class="{% if tarea.Estado == 1 %}text-gray-500 line-through{% else %}text-gray-800{% endif %}">
-								{{ tarea.Nombre }}
-							</p>
+						<p
+							class="{% if tarea.Estado == 1 %}text-gray-500 line-through{% else %}text-gray-800{% endif %}">
+							{{ tarea.Nombre }}
+						</p>
 
-							{% if tarea.Prioridad in [3, '3', 'Alta', 'alta'] %}
-							<span class="ml-auto text-xs font-medium text-yellow-800 bg-yellow-100 px-2 py-1 rounded-full">
-								Alta
-							</span>
-							{% elif tarea.Prioridad in [2, '2', 'Media', 'media'] %}
-							<span class="ml-auto text-xs font-medium text-blue-800 bg-blue-100 px-2 py-1 rounded-full">
-								Media
-							</span>
-							{% elif tarea.Prioridad in [1, '1', 'Baja', 'baja'] %}
-							<span class="ml-auto text-xs font-medium text-green-800 bg-green-100 px-2 py-1 rounded-full">
-								Baja
-							</span>
-							{% else %}
-							<span class="ml-auto text-xs font-medium text-gray-800 bg-gray-100 px-2 py-1 rounded-full">
-								{{ tarea.Prioridad }}
-							</span>
-							{% endif %}
-						</div>
-						{% endfor %}
+						{% if tarea.Prioridad in [3, '3', 'Alta', 'alta'] %}
+						<span class="ml-auto text-xs font-medium text-yellow-800 bg-yellow-100 px-2 py-1 rounded-full">
+							Alta
+						</span>
+						{% elif tarea.Prioridad in [2, '2', 'Media', 'media'] %}
+						<span class="ml-auto text-xs font-medium text-blue-800 bg-blue-100 px-2 py-1 rounded-full">
+							Media
+						</span>
+						{% elif tarea.Prioridad in [1, '1', 'Baja', 'baja'] %}
+						<span class="ml-auto text-xs font-medium text-green-800 bg-green-100 px-2 py-1 rounded-full">
+							Baja
+						</span>
+						{% else %}
+						<span class="ml-auto text-xs font-medium text-gray-800 bg-gray-100 px-2 py-1 rounded-full">
+							{{ tarea.Prioridad }}
+						</span>
+						{% endif %}
+					</div>
+					{% endfor %}
 					{% else %}
-						<p class="text-gray-500 text-sm">No tienes tareas asignadas para hoy.</p>
+					<p class="text-gray-500 text-sm">No tienes tareas asignadas para hoy.</p>
 					{% endif %}
 				</div>
 

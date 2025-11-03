@@ -25,10 +25,14 @@
 </head>
 
 <body class="bg-light text-light">
+
+    <!-- Barra lateral Nav -->
     <div class="d-flex" style="min-height:100vh;">
         <aside role="complementary" aria-label="Sidebar" class="bg-dark text-light flex-shrink-0 p-3"
             style="width:16rem;">
             <div class="d-flex flex-column" style="gap:.75rem;">
+
+                <!-- Usuario  -->
                 <div class="d-flex align-items-center gap-3 mb-2">
                     <div class="rounded-circle"
                         style="width:48px; height:48px; background-size:cover; background-position:center; background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC8w4gQAUyg__Pz5qUJG_E3XTetshO4_YIKFMqQKyOOBlh6o2nVxUlpwcK8JyDMCcUF8NneXp_NFdOXFCTSluwSVi96yPDxjCr4_bA9NhMlxZ6IECv90ys-HxLlB4GqnZAtAG6HUOagtP9ZaHHUOSQokZLtU3FRXAdnI79j-54cE77VNZT2B_vlkf9VOlCVX2nAxdiIjDDpe2LlA52k_A3GnIB5zIhg6KPjO6tcx0bMZclABUUuDnlL5g-EF9gjDyOI9VX7wzjF-pk');">
@@ -36,6 +40,7 @@
                     <h1 class="h6 mb-0"><strong>{{ session['usuario'] }}</strong></h1>
                 </div>
 
+                <!-- Navbar Links -->
                 <nav aria-label="Main navigation">
                     <ul class="nav nav-pills flex-column">
                         <li class="nav-item mb-1">
@@ -63,6 +68,7 @@
                             </a>
                         </li>
 
+                        <!-- Iniciar/Cerrar sesión -->
                         <li class="nav-item mt-3">
                             {% if session.get('usuario') %}
                             <a href="{{ url_for('logout') }}" class="btn btn-outline-light w-100">Cerrar sesión</a>
@@ -74,11 +80,14 @@
                 </nav>
             </div>
         </aside>
-
+        
+        <!-- Main Contenido -->
         <main class="flex-grow-1 p-8 bg-background-light">
             {% block content %}{% endblock %}
             <div class="row mt-3">
                 <div class="col-12">
+
+                    <!-- Footer -->
                     <footer class="d-flex justify-content-between align-items-center small text-muted border-top pt-3">
                         <div>MyPlanner • Versión 0.1</div>
                         <div>
