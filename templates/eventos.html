@@ -75,6 +75,9 @@
                     <div class="flex w-full min-w-72 grow flex-col xl:flex-row xl:items-start xl:justify-between items-stretch gap-2 p-4">
                         <div class="flex flex-col gap-2">
                             <p class="text-text-light text-lg font-bold leading-tight text-left">{{ evento.Nombre }}</p>
+                            {% if evento.Descripcion %}
+                            <p class="text-gray-600 text-sm leading-tight text-left">{{ evento.Descripcion }}</p>
+                            {% endif %}
                             <div class="flex flex-col gap-1 mt-2 text-left">
                                 <p class="text-gray-500 text-sm font-normal">
                                     <span class="material-symbols-outlined text-sm align-middle mr-1">calendar_today</span>
@@ -99,7 +102,7 @@
                                 Ver
                             </button>
                             <form method="POST" action="{{ url_for('eliminar_evento_view', id=evento.ID) }}" class="inline">
-                                <button type="submit" class="flex items-center justify-center px-3 py-1.5 rounded-lg border border-red-300 text-red-600 hover:bg-red-50 transition-colors text-sm">
+                                <button type="submit" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="flex items-center justify-center px-3 py-1.5 rounded-lg border border-red-300 text-red-600 hover:bg-red-50 transition-colors text-sm">
                                     <span class="material-symbols-outlined text-sm mr-1">delete</span>
                                     Eliminar
                                 </button>
