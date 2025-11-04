@@ -1,0 +1,110 @@
+DOCUMENTACIÓN DEL PROYECTO (RESUMEN POR BLOQUES)
+================================================
+
+Este archivo describe el funcionamiento del proyecto Flask por bloques lógicos (no línea a línea) para facilitar su comprensión. Al tener un nombre que empieza por punto, normalmente Git lo ignorará si existe una regla genérica, aunque para asegurarlo se puede añadir explicitamente al .gitignore.
+
+Indice rápido:
+1. app.py
+2. db.py
+3. models.py
+4. utils.py
+5. Plantillas (templates/)
+6. Flujo general
+7. Manejo de errores
+8. Posibles mejoras futuras
+9. Resumen responsabilidades
+
+------------------------------------------------
+1. app.py (Orquestación de la aplicación Flask)
+------------------------------------------------
+- Configuración inicial: crea la instancia Flask y define la clave secreta usada para sesiones.
+- Decorador login_required: asegura que rutas protegidas sólo se acceden con sesión iniciada. Redirige a /login si falta 'usuario'.
+- Rutas públicas: '/', '/login', '/logout'. Manejan autenticación y creación/eliminación de la sesión.
+- Dashboard (/dashboard): obtiene eventos y tareas, filtra los del día, calcula métricas semanal y número de eventos de mañana.
+- Calendario (/calendar): sirve la plantilla que usa FullCalendar y luego consume la API /api/eventos.
+- Bloque de eventos: listar, crear, ver detalle (modal), eliminar. Edición real vía API.
+- Bloque de tareas: listar, crear, ver detalle, eliminar, actualizar estado (checkbox AJAX).
+- APIs JSON: /api/eventos y /api/eventos/<id> (PUT), /api/tareas/<id> (PUT). Devuelven/actualizan datos con validaciones.
+- Arranque: if __name__ == '__main__' inicia servidor en modo debug (no recomendado en producción).
+
+------------------------------------------------
+2. db.py (Acceso a la base de datos y validaciones previas)
+------------------------------------------------
+- Validación temprana: funciones que revisan entradas antes de abrir conexión (evitan SQL injection básico y abusos).
+- get_connection(): devuelve conexión MySQL con autocommit desactivado para control manual.
+- Gestión de usuarios: registrar_usuario() (hash con bcrypt), verificar_usuario() (comparación segura), obtener_usuario_por_nombre().
+- Gestión de eventos: crear_evento(), modificar_evento(), eliminar_evento(), obtener_eventos(). Todas con validaciones de formatos.
+- Gestión de tareas: crear_tarea(), modificar_tarea(), eliminar_tarea(), actualizar_estado_tarea(), obtener_tareas() (normaliza Estado y añade Estado_str).
+- Métricas: obtener_resumen_semana() (tareas y completadas), obtener_eventos_manana() (conteo de eventos del día siguiente).
+
+------------------------------------------------
+3. models.py (Representación y transformación de datos)
+------------------------------------------------
+- Clase Evento: encapsula datos de la tabla EVENTOS, normaliza horas, convierte a diccionario para plantillas y crea formato FullCalendar. Método es_de_fecha() para filtrado.
+- Clase Tarea: encapsula datos de TAREAS, normaliza salida con Estado_str, método to_modal_dict() para reutilizar vistas tipo evento y es_de_fecha() para filtrado.
+
+------------------------------------------------
+4. utils.py (Herramientas compartidas y validaciones)
+------------------------------------------------
+- Filtrado: filtrar_eventos_por_fecha(), filtrar_tareas_por_fecha(). Construyen objetos y usan métodos es_de_fecha().
+- Normalización: normalizar_hora(), normalizar_fecha(), parsear_fecha().
+- Validaciones: validar_fechas() (coherencia fechas), limpiar_valor_opcional(), validar_id(), validar_texto_seguro(), validar_fecha_formato(), validar_hora_formato(), validar_prioridad(), validar_estado(). Se usan tanto en rutas como en db.py.
+
+------------------------------------------------
+5. Plantillas (templates/)
+------------------------------------------------
+- base.html: layout general con bloques para contenido.
+- login.html: formulario de autenticación y muestra error si credenciales inválidas.
+- nuevo_evento.html / nueva_tarea.html: formularios de creación con bloque de alerta si hay error del backend y validación básica HTML5/Bootstrap.
+- eventos.html / tareas.html: listados simples.
+- modal_fragment.html: fragmento reutilizable para mostrar detalle de evento (o similar) en ventana modal.
+- ver_evento.html / ver_tarea.html: vistas de detalle estáticas.
+- dashboard.html: mezcla de resumen diario, semanal y eventos de mañana.
+- calendar.html: contenedor para el calendario JS que consulta la API.
+
+------------------------------------------------
+6. Flujo general de datos
+------------------------------------------------
+1. Usuario hace login -> sesión con 'usuario'.
+2. Decorador login_required bloquea el acceso si no está autenticado.
+3. Formularios envían POST -> backend valida entradas (utils + db).
+4. Se persisten datos mediante funciones de db.py.
+5. Se crean objetos Evento/Tarea para normalizar antes de pasar a plantillas o APIs.
+6. Las APIs devuelven JSON listo para consumo por JavaScript (FullCalendar, modales, etc.).
+
+------------------------------------------------
+7. Manejo de errores
+------------------------------------------------
+- Formularios: se retorna la misma plantilla con variable 'error' para mostrar mensaje en alerta Bootstrap.
+- APIs: devuelven JSON con clave 'error' y código HTTP adecuado (400 validación, 500 interno).
+- Base de datos: try/except con rollback y propagación controlada (ValueError para validaciones, excepciones genéricas para errores graves).
+- Validación temprana en db.py evita conexiones innecesarias con datos maliciosos.
+
+------------------------------------------------
+8. Posibles mejoras futuras
+------------------------------------------------
+- CSRF: integrar Flask-WTF o token manual en sesión para proteger formularios.
+- Rate limiting login: contar intentos fallidos y bloquear temporalmente.
+- Unificar formato API: {'ok': bool, 'data': {...}, 'error': '...'} para todas las respuestas.
+- Auditoría: registrar usuario y timestamp en cada cambio.
+- Paginación y búsqueda en listados de eventos/tareas.
+- Tests unitarios y de integración (pytest) para validadores y rutas críticas.
+- Encriptar más campos sensibles si aplicase.
+
+------------------------------------------------
+9. Resumen de responsabilidades por archivo
+------------------------------------------------
+- app.py: Enruta, coordina validaciones de entrada, llama a capa de datos y prepara objetos para plantillas/APIs.
+- db.py: Acceso directo a la base de datos + validaciones previas antes de abrir conexión.
+- models.py: Representación lógica y transformación amigable de datos crudos (normalización, filtrado).
+- utils.py: Biblioteca transversal (validaciones y utilidades reusables).
+- templates/: Capa de presentación con mínima lógica (condicionales y bucles Jinja seguros).
+
+------------------------------------------------
+Notas finales
+------------------------------------------------
+- Seguridad básica implementada (validaciones, login obligatorio, bloqueo de patrones SQL simples).
+- Recomendado mover la SECRET_KEY a variable de entorno en producción.
+- Aumentar robustez: añadir logs, CSRF y protección ante fuerza bruta.
+
+FIN DEL DOCUMENTO

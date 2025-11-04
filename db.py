@@ -1,6 +1,77 @@
 from datetime import datetime, timedelta
 import mysql.connector
 import bcrypt
+import re
+
+
+# ----------- FUNCIONES DE VALIDACIÓN Y SEGURIDAD -------------------
+
+def validar_input_texto(texto, max_length=100):
+    """Valida que un texto sea seguro antes de usarlo en la BD.
+    
+    Args:
+        texto: String a validar
+        max_length: Longitud máxima permitida
+        
+    Returns:
+        bool: True si es válido, False si es sospechoso
+    """
+    if not texto or not isinstance(texto, str):
+        return False
+    
+    # Verificar longitud
+    if len(texto) > max_length:
+        return False
+    
+    # Detectar patrones sospechosos de SQL Injection
+    patrones_peligrosos = [
+        r"(\bOR\b|\bAND\b).*=.*",  # OR 1=1, AND 1=1
+        r"--",                      # Comentarios SQL
+        r";",                       # Multiple queries
+        r"\/\*",                    # Comentarios /* */
+        r"\bDROP\b",                # DROP TABLE
+        r"\bDELETE\b",              # DELETE FROM
+        r"\bUNION\b",               # UNION SELECT
+        r"\bEXEC\b",                # EXEC
+        r"\bSELECT\b.*\bFROM\b",   # SELECT FROM
+        r"<script",                 # XSS básico
+    ]
+    
+    texto_upper = texto.upper()
+    for patron in patrones_peligrosos:
+        if re.search(patron, texto_upper, re.IGNORECASE):
+            return False
+    
+    return True
+
+
+def validar_usuario_password(usuario, password):
+    """Valida usuario y contraseña antes de conectar a la BD.
+    
+    Args:
+        usuario: Nombre de usuario
+        password: Contraseña
+        
+    Returns:
+        bool: True si son válidos, False si son sospechosos
+    """
+    # Validar que no estén vacíos
+    if not usuario or not password:
+        return False
+    
+    # Validar longitudes
+    if len(usuario) > 50 or len(password) > 100:
+        return False
+    
+    # Validar formato de usuario (solo alfanuméricos, _, -, @, .)
+    if not re.match(r'^[a-zA-Z0-9_\-@.]+$', usuario):
+        return False
+    
+    # Validar que el texto no contenga SQL injection
+    if not validar_input_texto(usuario, 50):
+        return False
+    
+    return True
 
 
 # Conexión a la base de datos
@@ -19,38 +90,93 @@ def get_connection():
 
 # REGISTRAR USUARIO
 def registrar_usuario(nombre, contraseña, rol_id):
+    # VALIDAR ANTES DE CONECTAR
+    if not validar_usuario_password(nombre, contraseña):
+        raise ValueError("Datos de usuario inválidos o sospechosos")
+    
     conn = get_connection()
-    cursor = conn.cursor()
-    hashed = bcrypt.hashpw(contraseña.encode('utf-8'), bcrypt.gensalt())
-    query = "INSERT INTO USUARIO (usuario, password, rol) VALUES (%s, %s, %s)"
-    cursor.execute(query, (nombre, hashed.decode('utf-8'), rol_id))
-    conn.commit()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        hashed = bcrypt.hashpw(contraseña.encode('utf-8'), bcrypt.gensalt())
+        query = "INSERT INTO USUARIO (usuario, password, rol) VALUES (%s, %s, %s)"
+        cursor.execute(query, (nombre, hashed.decode('utf-8'), rol_id))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
 
 # VERIFICAR USUARIO
 def verificar_usuario(nombre, contraseña):
+    # VALIDAR ANTES DE CONECTAR - PROTECCIÓN SQL INJECTION
+    if not validar_usuario_password(nombre, contraseña):
+        return False
+    
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT password FROM USUARIO WHERE usuario=%s", (nombre,))
-    result = cursor.fetchone()
-    conn.close()
-    if result and bcrypt.checkpw(contraseña.encode('utf-8'), result[0].encode('utf-8')):
-        return True
-    return False
+    try:
+        cursor = conn.cursor()
+        # Usar parámetros preparados (ya lo hacías bien con %s)
+        cursor.execute("SELECT password FROM USUARIO WHERE usuario=%s", (nombre,))
+        result = cursor.fetchone()
+        
+        # Si no existe el usuario, retornar False
+        if not result:
+            return False
+        
+        # Solo verificar password si el usuario existe
+        return bcrypt.checkpw(contraseña.encode('utf-8'), result[0].encode('utf-8'))
+    except Exception as e:
+        # No revelar información del error
+        return False
+    finally:
+        conn.close()
 
 # Obtener usuario por nombre
 def obtener_usuario_por_nombre(nombre):
+    # VALIDAR ANTES DE CONECTAR
+    if not nombre or not validar_input_texto(nombre, 50):
+        return None
+    
     conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT ID FROM USUARIO WHERE usuario = %s", (nombre,))
-    usuario = cursor.fetchone()
-    conn.close()
-    return usuario
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT ID FROM USUARIO WHERE usuario = %s", (nombre,))
+        usuario = cursor.fetchone()
+        return usuario
+    except Exception:
+        return None
+    finally:
+        conn.close()
 
 #--------------------- FUNCIONES PARA GESTIONAR EVENTOS ------------------------------
 
 # CREAR EVENTO
 def crear_evento(nombre, fecha_evento, hora_evento, creador_id, fecha_fin=None, hora_fin=None, descripcion=None):
+    # VALIDAR DATOS ANTES DE CONECTAR
+    from utils import validar_texto_seguro, validar_fecha_formato, validar_hora_formato, validar_id
+    
+    if not validar_texto_seguro(nombre, 100, required=True):
+        raise ValueError("Nombre de evento inválido")
+    
+    if not validar_fecha_formato(fecha_evento):
+        raise ValueError("Fecha de evento inválida")
+    
+    if not validar_hora_formato(hora_evento):
+        raise ValueError("Hora de evento inválida")
+    
+    if not validar_id(creador_id):
+        raise ValueError("ID de creador inválido")
+    
+    if descripcion and not validar_texto_seguro(descripcion, 500, required=False):
+        raise ValueError("Descripción inválida")
+    
+    if fecha_fin and not validar_fecha_formato(fecha_fin):
+        raise ValueError("Fecha fin inválida")
+    
+    if hora_fin and not validar_hora_formato(hora_fin):
+        raise ValueError("Hora fin inválida")
+    
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -68,6 +194,30 @@ def crear_evento(nombre, fecha_evento, hora_evento, creador_id, fecha_fin=None, 
 
 # MODIFICAR EVENTO
 def modificar_evento(evento_id, nombre, fecha_evento, hora_evento, fecha_fin=None, hora_fin=None, descripcion=None):
+    # VALIDAR DATOS ANTES DE CONECTAR
+    from utils import validar_texto_seguro, validar_fecha_formato, validar_hora_formato, validar_id
+    
+    if not validar_id(evento_id):
+        raise ValueError("ID de evento inválido")
+    
+    if not validar_texto_seguro(nombre, 100, required=True):
+        raise ValueError("Nombre de evento inválido")
+    
+    if not validar_fecha_formato(fecha_evento):
+        raise ValueError("Fecha de evento inválida")
+    
+    if not validar_hora_formato(hora_evento):
+        raise ValueError("Hora de evento inválida")
+    
+    if descripcion and not validar_texto_seguro(descripcion, 500, required=False):
+        raise ValueError("Descripción inválida")
+    
+    if fecha_fin and not validar_fecha_formato(fecha_fin):
+        raise ValueError("Fecha fin inválida")
+    
+    if hora_fin and not validar_hora_formato(hora_fin):
+        raise ValueError("Hora fin inválida")
+    
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -87,6 +237,12 @@ def modificar_evento(evento_id, nombre, fecha_evento, hora_evento, fecha_fin=Non
 
 # ELIMINAR EVENTO
 def eliminar_evento(evento_id):
+    # VALIDAR ID ANTES DE CONECTAR
+    from utils import validar_id
+    
+    if not validar_id(evento_id):
+        raise ValueError("ID de evento inválido")
+    
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -111,6 +267,27 @@ def obtener_eventos():
 
 # Modificar CREAR TAREA para incluir estado
 def crear_tarea(nombre, descripcion, fecha_limite, prioridad, creador_id, estado=0):
+    # VALIDAR DATOS ANTES DE CONECTAR
+    from utils import validar_texto_seguro, validar_fecha_formato, validar_id, validar_prioridad, validar_estado
+    
+    if not validar_texto_seguro(nombre, 100, required=True):
+        raise ValueError("Nombre de tarea inválido")
+    
+    if descripcion and not validar_texto_seguro(descripcion, 500, required=False):
+        raise ValueError("Descripción inválida")
+    
+    if not validar_fecha_formato(fecha_limite):
+        raise ValueError("Fecha límite inválida")
+    
+    if not validar_prioridad(prioridad):
+        raise ValueError("Prioridad inválida (debe ser 1, 2 o 3)")
+    
+    if not validar_id(creador_id):
+        raise ValueError("ID de creador inválido")
+    
+    if not validar_estado(estado):
+        raise ValueError("Estado inválido (debe ser 0 o 1)")
+    
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -128,6 +305,27 @@ def crear_tarea(nombre, descripcion, fecha_limite, prioridad, creador_id, estado
 
 # Modificar MODIFICAR TAREA para incluir estado
 def modificar_tarea(tarea_id, nombre, descripcion, fecha_limite, prioridad, estado):
+    # VALIDAR DATOS ANTES DE CONECTAR
+    from utils import validar_texto_seguro, validar_fecha_formato, validar_id, validar_prioridad, validar_estado
+    
+    if not validar_id(tarea_id):
+        raise ValueError("ID de tarea inválido")
+    
+    if not validar_texto_seguro(nombre, 100, required=True):
+        raise ValueError("Nombre de tarea inválido")
+    
+    if descripcion and not validar_texto_seguro(descripcion, 500, required=False):
+        raise ValueError("Descripción inválida")
+    
+    if not validar_fecha_formato(fecha_limite):
+        raise ValueError("Fecha límite inválida")
+    
+    if not validar_prioridad(prioridad):
+        raise ValueError("Prioridad inválida (debe ser 1, 2 o 3)")
+    
+    if not validar_estado(estado):
+        raise ValueError("Estado inválido (debe ser 0 o 1)")
+    
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -146,6 +344,12 @@ def modificar_tarea(tarea_id, nombre, descripcion, fecha_limite, prioridad, esta
 
 # ELIMINAR TAREA
 def eliminar_tarea(tarea_id):
+    # VALIDAR ID ANTES DE CONECTAR
+    from utils import validar_id
+    
+    if not validar_id(tarea_id):
+        raise ValueError("ID de tarea inválido")
+    
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -158,6 +362,15 @@ def eliminar_tarea(tarea_id):
         conn.close()
 
 def actualizar_estado_tarea(tarea_id, estado):
+    # VALIDAR DATOS ANTES DE CONECTAR
+    from utils import validar_id, validar_estado
+    
+    if not validar_id(tarea_id):
+        raise ValueError("ID de tarea inválido")
+    
+    if not validar_estado(estado):
+        raise ValueError("Estado inválido (debe ser 0 o 1)")
+    
     conn = get_connection()
     try:
         cursor = conn.cursor()

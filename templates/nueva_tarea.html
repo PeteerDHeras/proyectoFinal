@@ -6,6 +6,12 @@
   <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
     <h2 class="mb-4 text-center">Crear nueva tarea</h2>
 
+    {% if error %}
+    <div class="alert alert-danger py-2 px-3 mb-3" role="alert">
+      {{ error }}
+    </div>
+    {% endif %}
+
     <form method="POST" class="needs-validation mt-4" novalidate>
       <!-- Nombre de la tarea -->
       <div class="mb-3">
