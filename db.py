@@ -11,71 +11,43 @@ load_dotenv()
 
 # ----------- FUNCIONES DE VALIDACIÓN Y SEGURIDAD -------------------
 
-def validar_input_texto(texto, max_length=100):
-    """Valida que un texto sea seguro antes de usarlo en la BD.
-    
-    Args:
-        texto: String a validar
-        max_length: Longitud máxima permitida
-        
-    Returns:
-        bool: True si es válido, False si es sospechoso
+def validar_input_texto(texto, max_length=100, allow_blank=False):
+    """Validador simplificado.
+
+    Se basa en:
+    - Tipo string
+    - Longitud máxima
+    - Opcional permitir vacío
+    - No intenta reconocer patrones SQL (porque usamos consultas parametrizadas).
+
+    Esto reduce falsos positivos y hace más sencillo el flujo.
     """
-    if not texto or not isinstance(texto, str):
+    if texto is None:
+        return allow_blank
+    if not isinstance(texto, str):
         return False
-    
-    # Verificar longitud
+    if not texto.strip():
+        return allow_blank
     if len(texto) > max_length:
         return False
-    
-    # Detectar patrones sospechosos de SQL Injection
-    patrones_peligrosos = [
-        r"(\bOR\b|\bAND\b).*=.*",  # OR 1=1, AND 1=1
-        r"--",                      # Comentarios SQL
-        r";",                       # Multiple queries
-        r"\/\*",                    # Comentarios /* */
-        r"\bDROP\b",                # DROP TABLE
-        r"\bDELETE\b",              # DELETE FROM
-        r"\bUNION\b",               # UNION SELECT
-        r"\bEXEC\b",                # EXEC
-        r"\bSELECT\b.*\bFROM\b",   # SELECT FROM
-        r"<script",                 # XSS básico
-    ]
-    
-    texto_upper = texto.upper()
-    for patron in patrones_peligrosos:
-        if re.search(patron, texto_upper, re.IGNORECASE):
-            return False
-    
     return True
 
 
 def validar_usuario_password(usuario, password):
-    """Valida usuario y contraseña antes de conectar a la BD.
-    
-    Args:
-        usuario: Nombre de usuario
-        password: Contraseña
-        
-    Returns:
-        bool: True si son válidos, False si son sospechosos
+    """Valida usuario y contraseña de forma básica.
+
+    - Usuario: obligatorio, <=50, caracteres permitidos alfanumérico + _ - @ .
+    - Password: obligatorio, <=100. (La complejidad se comprueba en app.py para registro.)
     """
-    # Validar que no estén vacíos
+    if not isinstance(usuario, str) or not isinstance(password, str):
+        return False
     if not usuario or not password:
         return False
-    
-    # Validar longitudes
     if len(usuario) > 50 or len(password) > 100:
         return False
-    
-    # Validar formato de usuario (solo alfanuméricos, _, -, @, .)
     if not re.match(r'^[a-zA-Z0-9_\-@.]+$', usuario):
         return False
-    
-    # Validar que el texto no contenga SQL injection
-    if not validar_input_texto(usuario, 50):
-        return False
-    
+    # No chequeamos SQL keywords porque usamos consultas parametrizadas.
     return True
 
 
@@ -158,7 +130,6 @@ def verificar_usuario(nombre, contraseña):
     conn = get_connection()
     try:
         cursor = conn.cursor()
-        # Usar parámetros preparados (ya lo hacías bien con %s)
         cursor.execute("SELECT password FROM USUARIO WHERE usuario=%s", (nombre,))
         result = cursor.fetchone()
         
