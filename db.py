@@ -112,7 +112,8 @@ def registrar_usuario(nombre, contraseña, rol_id):
     try:
         cursor = conn.cursor()
         hashed = bcrypt.hashpw(contraseña.encode('utf-8'), bcrypt.gensalt())
-        query = "INSERT INTO USUARIO (usuario, password, rol) VALUES (%s, %s, %s)"
+        # Tabla real en el esquema: usuario (minúsculas)
+        query = "INSERT INTO usuario (usuario, password, rol) VALUES (%s, %s, %s)"
         cursor.execute(query, (nombre, hashed.decode('utf-8'), rol_id))
         conn.commit()
     except Exception as e:
@@ -130,17 +131,13 @@ def verificar_usuario(nombre, contraseña):
     conn = get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT password FROM USUARIO WHERE usuario=%s", (nombre,))
+        # Tabla real: usuario
+        cursor.execute("SELECT password FROM usuario WHERE usuario=%s", (nombre,))
         result = cursor.fetchone()
-        
-        # Si no existe el usuario, retornar False
         if not result:
             return False
-        
-        # Solo verificar password si el usuario existe
         return bcrypt.checkpw(contraseña.encode('utf-8'), result[0].encode('utf-8'))
-    except Exception as e:
-        # No revelar información del error
+    except Exception:
         return False
     finally:
         conn.close()
@@ -154,7 +151,8 @@ def obtener_usuario_por_nombre(nombre):
     conn = get_connection()
     try:
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT ID FROM USUARIO WHERE usuario = %s", (nombre,))
+        # Tabla real: usuario
+        cursor.execute("SELECT Id FROM usuario WHERE usuario = %s", (nombre,))
         usuario = cursor.fetchone()
         return usuario
     except Exception:
@@ -195,7 +193,7 @@ def crear_evento(nombre, fecha_evento, hora_evento, creador_id, fecha_fin=None, 
         cursor = conn.cursor()
         # fecha_creacion ahora es TIMESTAMP con DEFAULT CURRENT_TIMESTAMP
         query = """
-            INSERT INTO EVENTOS (Nombre, Descripcion, Fecha_evento, Hora_evento, creadorEvento, Fecha_fin, Hora_fin)
+            INSERT INTO eventos (Nombre, Descripcion, Fecha_evento, Hora_evento, creadorEvento, Fecha_fin, Hora_fin)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
         cursor.execute(query, (nombre, descripcion, fecha_evento, hora_evento, creador_id, fecha_fin, hora_fin))
@@ -236,7 +234,7 @@ def modificar_evento(evento_id, nombre, fecha_evento, hora_evento, fecha_fin=Non
     try:
         cursor = conn.cursor()
         query = """
-            UPDATE EVENTOS
+            UPDATE eventos
             SET Nombre=%s, Fecha_evento=%s, Hora_evento=%s, Fecha_fin=%s, Hora_fin=%s, Descripcion=%s
             WHERE ID=%s
         """
@@ -260,7 +258,7 @@ def eliminar_evento(evento_id):
     conn = get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM EVENTOS WHERE ID=%s", (evento_id,))
+        cursor.execute("DELETE FROM eventos WHERE ID=%s", (evento_id,))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -272,7 +270,7 @@ def eliminar_evento(evento_id):
 def obtener_eventos():  
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM EVENTOS ORDER BY Fecha_evento ASC, Hora_evento ASC")
+    cursor.execute("SELECT * FROM eventos ORDER BY Fecha_evento ASC, Hora_evento ASC")
     eventos = cursor.fetchall()
     conn.close()
     return eventos
@@ -307,7 +305,7 @@ def crear_tarea(nombre, descripcion, fecha_limite, prioridad, creador_id, estado
         cursor = conn.cursor()
         # fecha_creacion ahora es TIMESTAMP con DEFAULT CURRENT_TIMESTAMP
         query = """
-            INSERT INTO TAREAS (Nombre, Descripcion, Fecha_limite, Prioridad, creadorTarea, Estado)
+            INSERT INTO tareas (Nombre, Descripcion, Fecha_limite, Prioridad, creadorTarea, estado)
             VALUES (%s, %s, %s, %s, %s, %s)
         """
         cursor.execute(query, (nombre, descripcion, fecha_limite, prioridad, creador_id, estado))
@@ -345,8 +343,8 @@ def modificar_tarea(tarea_id, nombre, descripcion, fecha_limite, prioridad, esta
     try:
         cursor = conn.cursor()
         query = """
-            UPDATE TAREAS
-            SET Nombre=%s, Descripcion=%s, Fecha_limite=%s, Prioridad=%s, Estado=%s
+            UPDATE tareas
+            SET Nombre=%s, Descripcion=%s, Fecha_limite=%s, Prioridad=%s, estado=%s
             WHERE ID=%s
         """
         cursor.execute(query, (nombre, descripcion, fecha_limite, prioridad, estado, tarea_id))
@@ -368,7 +366,7 @@ def eliminar_tarea(tarea_id):
     conn = get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM TAREAS WHERE ID=%s", (tarea_id,))
+        cursor.execute("DELETE FROM tareas WHERE ID=%s", (tarea_id,))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -389,7 +387,7 @@ def actualizar_estado_tarea(tarea_id, estado):
     conn = get_connection()
     try:
         cursor = conn.cursor()
-        query = "UPDATE TAREAS SET Estado=%s WHERE ID=%s"
+        query = "UPDATE tareas SET estado=%s WHERE ID=%s"
         cursor.execute(query, (estado, tarea_id))
         conn.commit()
     except Exception as e:
@@ -423,13 +421,13 @@ def obtener_resumen_semana():
 
     query_total = """
         SELECT COUNT(*) AS total
-        FROM TAREAS
+        FROM tareas
         WHERE Fecha_limite BETWEEN %s AND %s
     """
     query_completadas = """
         SELECT COUNT(*) AS completadas
-        FROM TAREAS
-        WHERE Estado = 1 AND Fecha_limite BETWEEN %s AND %s
+        FROM tareas
+        WHERE estado = 1 AND Fecha_limite BETWEEN %s AND %s
     """
 
     cursor.execute(query_total, (inicio_semana, fin_semana))
@@ -450,7 +448,7 @@ def obtener_eventos_manana():
     hoy = datetime.now().date()
     manana = hoy + timedelta(days=1)
 
-    query = "SELECT COUNT(*) AS eventos FROM EVENTOS WHERE Fecha_evento = %s"
+    query = "SELECT COUNT(*) AS eventos FROM eventos WHERE Fecha_evento = %s"
     cursor.execute(query, (manana,))
     cantidad = cursor.fetchone()['eventos']
 
