@@ -20,11 +20,40 @@ from utils import (normalizar_hora, normalizar_fecha, validar_fechas,
                    validar_fecha_formato, validar_hora_formato, validar_prioridad, validar_estado,
                    validar_fecha_no_pasada, validar_no_vacio, sanitizar_texto,
                    validar_longitud, validar_rango_horas)
+import os
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
 
 
 # ------------------ CONFIGURACIÓN FLASK ------------------
 app = Flask(__name__)
-app.secret_key = 'clave_secreta_segura'  # cambiar en producción
+app.secret_key = os.getenv('SECRET_KEY', 'clave_secreta_segura')
+
+
+# ------------------ HELPER FUNCTIONS ------------------
+
+def time_to_str(val):
+    """
+    Convierte un valor de tiempo (string, datetime.time, o timedelta) a formato 'HH:MM'
+    MySQL devuelve timedelta para campos TIME
+    """
+    if not val:
+        return ''
+    # string like 'HH:MM:SS' or 'HH:MM'
+    if isinstance(val, str):
+        return val[:5]
+    # datetime.time
+    if isinstance(val, time):
+        return val.strftime('%H:%M')
+    # timedelta -> convert to HH:MM
+    if hasattr(val, 'total_seconds'):
+        total = int(val.total_seconds())
+        hours = (total // 3600) % 24
+        minutes = (total % 3600) // 60
+        return f"{hours:02d}:{minutes:02d}"
+    return str(val)[:5]
 
 
 # ------------------ AUTORIZACIÓN (decorador) ------------------
@@ -632,4 +661,4 @@ def actualizar_tarea_api(tarea_id):
 
 if __name__ == '__main__':
     # Nota: en producción no usar debug=True y exponer la app directamente.
-    app.run(host="0.0.0.0", port=5001, debug=True)  # Escuchar en todas las interfaces, puerto 5001(portatil)
+        app.run(host="0.0.0.0", port=int(os.getenv('PORT', 5001)), debug=os.getenv('FLASK_ENV', 'development') != 'production')

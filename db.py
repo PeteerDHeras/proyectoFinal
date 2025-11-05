@@ -2,6 +2,11 @@ from datetime import datetime, timedelta
 import mysql.connector
 import bcrypt
 import re
+import os
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
 
 
 # ----------- FUNCIONES DE VALIDACIÓN Y SEGURIDAD -------------------
@@ -77,14 +82,35 @@ def validar_usuario_password(usuario, password):
 # Conexión a la base de datos
 
 def get_connection():
-    return mysql.connector.connect(
-        host="localhost",                   # 192.168.0.120 o localhost (portatil)
-        user="pdelasheras",                     
-        password="pdelasheras",
-        database="myplanner_db",
-        autocommit=False,  # Desactivar autocommit para manejar transacciones manualmente
-        connection_timeout=10  # Timeout de conexión
-    )
+    """
+    Crea una conexión segura a la base de datos MySQL.
+    Usa variables de entorno para las credenciales.
+    Compatible con Aiven MySQL con SSL/TLS.
+    """
+    # Obtener credenciales de variables de entorno
+    db_host = os.getenv('DB_HOST', 'localhost')
+    db_port = int(os.getenv('DB_PORT', 3306))
+    db_user = os.getenv('DB_USER', 'pdelasheras')
+    db_password = os.getenv('DB_PASSWORD', 'pdelasheras')
+    db_name = os.getenv('DB_NAME', 'myplanner_db')
+    
+    # Configurar conexión con o sin SSL según el host
+    connection_config = {
+        'host': db_host,
+        'port': db_port,
+        'user': db_user,
+        'password': db_password,
+        'database': db_name,
+        'autocommit': False,
+        'connection_timeout': 10
+    }
+    
+    # Si es Aiven (contiene aivencloud.com), habilitar SSL
+    if 'aivencloud.com' in db_host:
+        connection_config['ssl_verify_identity'] = True
+        connection_config['ssl_disabled'] = False
+    
+    return mysql.connector.connect(**connection_config)
 
 # ----------- FUNCIONES PARA GESTIONAR USUARIOS -------------------
 
@@ -180,9 +206,10 @@ def crear_evento(nombre, fecha_evento, hora_evento, creador_id, fecha_fin=None, 
     conn = get_connection()
     try:
         cursor = conn.cursor()
+        # fecha_creacion ahora es TIMESTAMP con DEFAULT CURRENT_TIMESTAMP
         query = """
-            INSERT INTO EVENTOS (Nombre, Descripcion, Fecha_creacion, Fecha_evento, Hora_evento, creadorEvento, Fecha_fin, Hora_fin)
-            VALUES (%s, %s, CURDATE(), %s, %s, %s, %s, %s)
+            INSERT INTO EVENTOS (Nombre, Descripcion, Fecha_evento, Hora_evento, creadorEvento, Fecha_fin, Hora_fin)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
         cursor.execute(query, (nombre, descripcion, fecha_evento, hora_evento, creador_id, fecha_fin, hora_fin))
         conn.commit()
@@ -291,9 +318,10 @@ def crear_tarea(nombre, descripcion, fecha_limite, prioridad, creador_id, estado
     conn = get_connection()
     try:
         cursor = conn.cursor()
+        # fecha_creacion ahora es TIMESTAMP con DEFAULT CURRENT_TIMESTAMP
         query = """
-            INSERT INTO TAREAS (Nombre, Descripcion, Fecha_creacion, Fecha_limite, Prioridad, creadorTarea, Estado)
-            VALUES (%s, %s, CURDATE(), %s, %s, %s, %s)
+            INSERT INTO TAREAS (Nombre, Descripcion, Fecha_limite, Prioridad, creadorTarea, Estado)
+            VALUES (%s, %s, %s, %s, %s, %s)
         """
         cursor.execute(query, (nombre, descripcion, fecha_limite, prioridad, creador_id, estado))
         conn.commit()
