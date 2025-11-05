@@ -92,8 +92,6 @@ def login():
             return render_template('login.html', error='Usuario y contraseña requeridos')
         if not validar_longitud(usuario, 50, 3):
             return render_template('login.html', error='Usuario debe tener entre 3 y 50 caracteres')
-        if not validar_longitud(password, 100, 6):
-            return render_template('login.html', error='Contraseña mínima 6 caracteres')
         if verificar_usuario(usuario, password):
             session['usuario'] = usuario
             return redirect(url_for('dashboard'))
