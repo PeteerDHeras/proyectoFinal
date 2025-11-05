@@ -105,10 +105,25 @@ def get_connection():
         'connection_timeout': 10
     }
     
-    # Si es Aiven (contiene aivencloud.com), habilitar SSL sin verificar identidad
+    # Si es Aiven (contiene aivencloud.com), habilitar SSL
     if 'aivencloud.com' in db_host:
-        connection_config['ssl_verify_cert'] = True
-        connection_config['ssl_verify_identity'] = False
+        db_ssl_ca = os.getenv('DB_SSL_CA')
+        
+        if db_ssl_ca:
+            # Si hay certificado en variable de entorno, guardarlo temporalmente
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.pem', delete=False) as cert_file:
+                cert_file.write(db_ssl_ca)
+                cert_path = cert_file.name
+            
+            connection_config['ssl_ca'] = cert_path
+            connection_config['ssl_verify_cert'] = True
+            connection_config['ssl_verify_identity'] = True
+        else:
+            # Sin certificado, usar SSL pero sin verificar identidad
+            connection_config['ssl_verify_cert'] = True
+            connection_config['ssl_verify_identity'] = False
+        
         connection_config['ssl_disabled'] = False
     
     return mysql.connector.connect(**connection_config)
