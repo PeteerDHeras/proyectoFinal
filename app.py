@@ -138,8 +138,8 @@ def register():
         password = request.form.get('password', '')
         confirm = request.form.get('confirm', '')
 
-    # Reglas contraseña: min 8, al menos una mayúscula, una minúscula y un número, sin símbolos
-    patron_password = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$'
+        # Reglas contraseña: min 8, al menos una mayúscula, una minúscula y un número, sin símbolos
+        patron_password = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$'
 
         # Validaciones básicas
         if not validar_no_vacio(usuario) or not validar_no_vacio(password):
@@ -148,7 +148,7 @@ def register():
             return render_template('register.html', error='El usuario debe tener entre 3 y 50 caracteres')
         if not re.match(r'^[a-zA-Z0-9]+$', usuario):
             return render_template('register.html', error='El usuario solo puede contener letras y números')
-            if usuario != 'admin' and not re.match(patron_password, password):
+        if usuario != 'admin' and not re.match(patron_password, password):
             return render_template('register.html', error='La contraseña debe tener mínimo 8 caracteres, incluir mayúscula, minúscula y número')
         if password != confirm:
             return render_template('register.html', error='Las contraseñas no coinciden')
