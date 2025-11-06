@@ -480,6 +480,51 @@ def obtener_usuarios():
     conn.close()
     return usuarios
 
+def limpiar_datos_antiguos(dias=3):
+    """
+    Elimina eventos y tareas que hayan pasado hace más de X días.
+    Por defecto elimina los que tengan más de 3 días de antigüedad.
+    
+    Args:
+        dias (int): Número de días después de los cuales se eliminan los datos antiguos
+    
+    Returns:
+        tuple: (eventos_eliminados, tareas_eliminadas)
+    """
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        
+        # Calcular fecha límite (hace X días)
+        fecha_limite = datetime.now().date() - timedelta(days=dias)
+        
+        # Eliminar eventos antiguos (basado en fecha_evento)
+        query_eventos = """
+            DELETE FROM eventos 
+            WHERE fecha_evento < %s
+        """
+        cursor.execute(query_eventos, (fecha_limite,))
+        eventos_eliminados = cursor.rowcount
+        
+        # Eliminar tareas antiguas (basado en fecha_limite)
+        query_tareas = """
+            DELETE FROM tareas 
+            WHERE fecha_limite < %s
+        """
+        cursor.execute(query_tareas, (fecha_limite,))
+        tareas_eliminadas = cursor.rowcount
+        
+        conn.commit()
+        
+        return eventos_eliminados, tareas_eliminadas
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Error al limpiar datos antiguos: {e}")
+        return 0, 0
+    finally:
+        conn.close()
+
 def registrar_auditoria(usuario, accion, tipo, objeto_id):
     """Registra una acción en la tabla auditoria. DESHABILITADA - tabla no existe."""
     # TODO: Crear tabla auditoria en la base de datos

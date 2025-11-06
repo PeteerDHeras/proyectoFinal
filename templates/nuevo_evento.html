@@ -2,86 +2,147 @@
 {% block title %}Nuevo evento{% endblock %}
 {% block content %}
 
-<div class="d-flex justify-content-center p-5">
-  <div class="card p-4 shadow-sm" style="max-width: 400px; width: 100%;">
-    <h2 class="mb-4 text-center">Crear nuevo evento</h2>
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12 px-4">
+  <div class="w-full max-w-2xl">
+    <!-- Header -->
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full shadow-lg mb-4">
+        <span class="material-symbols-outlined text-white text-3xl">event</span>
+      </div>
+      <h2 class="text-3xl font-bold text-gray-900">Crear nuevo evento</h2>
+      <p class="text-gray-600 text-sm mt-2">Organiza tu próximo evento con todos los detalles</p>
+    </div>
 
+    <!-- Error Alert -->
     {% if error %}
-    <div class="alert alert-danger py-2 px-3 mb-3" role="alert">
-      {{ error }}
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm mb-6">
+      <div class="flex items-center">
+        <span class="material-symbols-outlined text-red-500 mr-3">error</span>
+        <p class="text-red-800 text-sm font-medium">{{ error }}</p>
+      </div>
     </div>
     {% endif %}
 
-    <form method="POST" class="needs-validation mt-4" novalidate>
-      <!-- Nombre del evento -->
-      <div class="mb-3">
-        <label for="nombre" class="form-label">Nombre del evento</label>
-        <input type="text" id="nombre" name="nombre" class="form-control form-control-sm" required>
-        <div class="invalid-feedback">
-          Por favor ingresa el nombre del evento.
+    <!-- Form Card -->
+    <div class="bg-white rounded-2xl shadow-2xl p-8">
+      <form method="POST" class="space-y-6">
+        <!-- Nombre del evento -->
+        <div>
+          <label for="nombre" class="block text-sm font-semibold text-gray-700 mb-2">
+            <span class="material-symbols-outlined text-sm align-middle mr-1">title</span>
+            Nombre del evento
+          </label>
+          <input 
+            type="text" 
+            id="nombre" 
+            name="nombre" 
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+            placeholder="Ej: Reunión de equipo"
+            required
+          >
         </div>
-      </div>
 
-      <!-- Descripción del evento -->
-      <div class="mb-3">
-        <label for="descripcion" class="form-label">Descripción (opcional)</label>
-        <textarea id="descripcion" name="descripcion" class="form-control form-control-sm" rows="3"></textarea>
-      </div>
-
-      <!-- Fecha de inicio -->
-      <div class="mb-3 mt-4">
-        <label for="fecha_evento" class="form-label">Fecha de inicio</label>
-          <input type="date" id="fecha_evento" name="fecha_evento"
-                class="form-control form-control-sm" 
-                value="{{ request.args.get('fecha_evento', fecha_preseleccionada) }}" required>
-        <div class="invalid-feedback">
-          Por favor selecciona la fecha del evento.
+        <!-- Descripción -->
+        <div>
+          <label for="descripcion" class="block text-sm font-semibold text-gray-700 mb-2">
+            <span class="material-symbols-outlined text-sm align-middle mr-1">description</span>
+            Descripción (opcional)
+          </label>
+          <textarea 
+            id="descripcion" 
+            name="descripcion" 
+            rows="3"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+            placeholder="Añade detalles adicionales sobre el evento..."
+          ></textarea>
         </div>
-      </div>
 
-      <!-- Hora de inicio -->
-      <div class="mb-3 mt-4">
-        <label for="hora_evento" class="form-label">Hora de inicio</label>
-          <input type="time" id="hora_evento" name="hora_evento"
-                class="form-control form-control-sm"
-                value="{{ request.args.get('hora_evento', '') }}" required>
-        <div class="invalid-feedback">
-          Por favor selecciona la hora del evento.
-        </div>©
-      </div>
+        <!-- Fechas y Horas - Grid 2 columnas -->
+        <div class="bg-gray-50 rounded-lg p-6 space-y-4">
+          <h3 class="text-sm font-semibold text-gray-700 flex items-center mb-4">
+            <span class="material-symbols-outlined text-sm mr-2">schedule</span>
+            Fecha y hora del evento
+          </h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Fecha inicio -->
+            <div>
+              <label for="fecha_evento" class="block text-sm font-medium text-gray-700 mb-2">
+                Fecha de inicio *
+              </label>
+              <input 
+                type="date" 
+                id="fecha_evento" 
+                name="fecha_evento"
+                value="{{ request.args.get('fecha_evento', fecha_preseleccionada) }}"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                required
+              >
+            </div>
 
-      <!-- Fecha de finalización (opcional) -->
-      <div class="mb-3 mt-4">
-        <label for="fecha_fin" class="form-label">Fecha de finalización (opcional)</label>
-        <input type="date" id="fecha_fin" name="fecha_fin" class="form-control form-control-sm">
-      </div>
+            <!-- Hora inicio -->
+            <div>
+              <label for="hora_evento" class="block text-sm font-medium text-gray-700 mb-2">
+                Hora de inicio *
+              </label>
+              <input 
+                type="time" 
+                id="hora_evento" 
+                name="hora_evento"
+                value="{{ request.args.get('hora_evento', '') }}"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                required
+              >
+            </div>
 
-      <!-- Hora de finalización (opcional) -->
-      <div class="mb-3 mt-4">
-        <label for="hora_fin" class="form-label">Hora de finalización (opcional)</label>
-        <input type="time" id="hora_fin" name="hora_fin" class="form-control form-control-sm">
-      </div>
+            <!-- Fecha fin -->
+            <div>
+              <label for="fecha_fin" class="block text-sm font-medium text-gray-700 mb-2">
+                Fecha de fin (opcional)
+              </label>
+              <input 
+                type="date" 
+                id="fecha_fin" 
+                name="fecha_fin"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+              >
+            </div>
 
-      <button type="submit" class="btn btn-primary w-100 mt-4">Guardar evento</button>
-    </form>
+            <!-- Hora fin -->
+            <div>
+              <label for="hora_fin" class="block text-sm font-medium text-gray-700 mb-2">
+                Hora de fin (opcional)
+              </label>
+              <input 
+                type="time" 
+                id="hora_fin" 
+                name="hora_fin"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="flex gap-3 pt-4">
+          <button 
+            type="submit"
+            class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg hover:from-blue-600 hover:to-indigo-700 transform hover:scale-[1.02] transition duration-200"
+          >
+            <span class="material-symbols-outlined text-xl">save</span>
+            <span>Guardar evento</span>
+          </button>
+          <a 
+            href="{{ url_for('ver_eventos') }}"
+            class="flex items-center justify-center gap-2 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition duration-200"
+          >
+            <span class="material-symbols-outlined text-xl">cancel</span>
+            <span>Cancelar</span>
+          </a>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
-
-<script>
-// Validación de Bootstrap 5
-(() => {
-  'use strict'
-  const forms = document.querySelectorAll('.needs-validation')
-  Array.from(forms).forEach(form => {
-    form.addEventListener('submit', event => {
-      if (!form.checkValidity()) {
-        event.preventDefault()
-        event.stopPropagation()
-      }
-      form.classList.add('was-validated')
-    }, false)
-  })
-})()
-</script>
 
 {% endblock %}

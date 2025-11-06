@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Ayuda{% endblock %}
+{% block content %}
+<div class="container py-5 m-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h1 class="display-4 mb-4 text-dark">
+                <i class="fa fa-question-circle me-3"></i>
+                Ayuda
+            </h1>
+            
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-dark">
+                        <i class="fa fa-calendar-alt me-2"></i>
+                        ¿Cómo crear un evento?
+                    </h5>
+                    <p class="card-text text-secondary">
+                        Ve a la sección <strong>Calendario</strong> o <strong>Eventos</strong> y haz clic en "Nuevo Evento". 
+                        Completa el formulario con el nombre, fecha, hora y descripción opcional.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-dark">
+                        <i class="fa fa-tasks me-2"></i>
+                        ¿Cómo crear una tarea?
+                    </h5>
+                    <p class="card-text text-secondary">
+                        Accede a <strong>Tareas</strong> desde el menú lateral y presiona "Nueva Tarea". 
+                        Indica el nombre, fecha límite, prioridad y descripción.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-dark">
+                        <i class="fa fa-check-circle me-2"></i>
+                        ¿Cómo marcar una tarea como completada?
+                    </h5>
+                    <p class="card-text text-secondary">
+                        En la lista de tareas, simplemente haz clic en el checkbox junto al nombre de la tarea.
+                        El cambio se guarda automáticamente.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-dark">
+                        <i class="fa fa-chart-pie me-2"></i>
+                        ¿Qué es el Dashboard?
+                    </h5>
+                    <p class="card-text text-secondary">
+                        El Dashboard es tu vista principal donde puedes ver un resumen de tus eventos de hoy,
+                        tareas de la semana y estadísticas de progreso.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-dark">
+                        <i class="fa fa-trash me-2"></i>
+                        ¿Se borran automáticamente los datos antiguos?
+                    </h5>
+                    <p class="card-text text-secondary">
+                        Sí, los eventos y tareas con más de 3 días de antigüedad se eliminan automáticamente
+                        para mantener la base de datos organizada.
+                    </p>
+                </div>
+            </div>
+
+            <div class="alert alert-info" role="alert">
+                <i class="fa fa-info-circle me-2"></i>
+                <strong>¿Necesitas más ayuda?</strong> Visita nuestra página de 
+                <a href="{{ url_for('contacto') }}" class="alert-link">Contacto</a>.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

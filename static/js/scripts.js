@@ -751,10 +751,12 @@ document.addEventListener('click', function (e) {
       editBtn && editBtn.addEventListener('click', () => {
         Array.from(form.querySelectorAll('input, textarea')).forEach(i => i.removeAttribute('readonly'));
         Array.from(form.querySelectorAll('select')).forEach(s => s.removeAttribute('disabled'));
-        // Mostrar/ocultar botones (usar estilos inline para compatibilidad)
-        editBtn.style.display = 'none';
-        saveBtn.style.display = '';
-        cancelBtn.style.display = '';
+        // Mostrar/ocultar botones usando clases de Tailwind
+        editBtn.classList.add('hidden');
+        saveBtn.classList.remove('hidden');
+        saveBtn.classList.add('flex');
+        cancelBtn.classList.remove('hidden');
+        cancelBtn.classList.add('flex');
       });
 
       // --- BOTÓN CANCELAR: Restaurar valores originales ---
@@ -770,10 +772,13 @@ document.addEventListener('click', function (e) {
             i.setAttribute('readonly', '');
           }
         });
-        // Mostrar/ocultar botones
-        saveBtn.style.display = 'none';
-        cancelBtn.style.display = 'none';
-        editBtn.style.display = '';
+        // Mostrar/ocultar botones usando clases de Tailwind
+        saveBtn.classList.add('hidden');
+        saveBtn.classList.remove('flex');
+        cancelBtn.classList.add('hidden');
+        cancelBtn.classList.remove('flex');
+        editBtn.classList.remove('hidden');
+        editBtn.classList.add('flex');
       });
 
       // --- BOTÓN GUARDAR: Enviar cambios al servidor ---

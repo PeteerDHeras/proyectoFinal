@@ -61,53 +61,59 @@
         </div>
 
     <!-- Grid de Eventos -->
-    <div id="eventos-grid" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+    <div id="eventos-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {% for evento in eventos %}
-            <div class="p-4 @container">
-
-                <!-- Evento -->
-                <div class="flex flex-col items-stretch justify-start rounded-xl @xl:flex-row @xl:items-start shadow-lg bg-white transition-shadow duration-300 hover:shadow-2xl hover:shadow-primary/20">
-                    
-                    <!-- Imagen del evento (default) -->
-                    <div class="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-t-xl @xl:rounded-l-xl @xl:rounded-t-none"
-                        style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAZ_KjxGRwCK38hWo0fYhIZug9rsrz-X2-vNAjadAui1Ze2H8vxVlHB8PXk8EObZOFGR4ajiqeJF3PsQUjjatrJBantZ9oQ0fJPZQO9Y8luyKKVsA9yC3DvEhzeykCfHlUbjW0xXIC73lF9p10nTC31kp6HDfrhrV6r39OG0ADJL24NkTwq7nYU1lzDrIiWhp5vG8Uqs9tjY-waOOvdmpQeofXCjshsPWDqyPd_089E1IdVKxWWw7QTOGNx4r7MPoy9tJaBM8ROqRI");'>
+            <!-- Tarjeta de Evento Compacta -->
+            <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-200">
+                
+                <!-- Header con gradiente y título -->
+                <div class="relative bg-gradient-to-br from-blue-700 via-indigo-700 to-purple-800 p-4 h-24 flex items-end">
+                    <div class="absolute top-2 right-2">
+                        <span class="material-symbols-outlined text-white text-2xl opacity-20">event</span>
                     </div>
-                    <div class="flex w-full min-w-72 grow flex-col xl:flex-row xl:items-start xl:justify-between items-stretch gap-2 p-4">
-                        <div class="flex flex-col gap-2">
-                            <p class="text-text-light text-lg font-bold leading-tight text-left">{{ evento.nombre }}</p>
-                            {% if evento.descripcion %}
-                            <p class="text-gray-600 text-sm leading-tight text-left">{{ evento.descripcion }}</p>
-                            {% endif %}
-                            <div class="flex flex-col gap-1 mt-2 text-left">
-                                <p class="text-gray-500 text-sm font-normal">
-                                    <span class="material-symbols-outlined text-sm align-middle mr-1">calendar_today</span>
-                                    {{ evento.fecha_evento }}
-                                </p>
-                                <p class="text-gray-500 text-sm font-normal">
-                                    <span class="material-symbols-outlined text-sm align-middle mr-1">schedule</span>
-                                    {%- set _hora = evento.hora_evento|string -%}
-                                    {%- if _hora -%}
-                                        {{ _hora.split(':')[:2]|join(':') }}
-                                    {%- else -%}
-                                    
-                                    {%- endif -%}
-                                </p>
-                            </div>
+                    <h3 class="text-white font-bold text-base leading-tight line-clamp-2">{{ evento.nombre }}</h3>
+                </div>
+                
+                <!-- Contenido -->
+                <div class="p-4 space-y-3">
+                    <!-- Descripción breve -->
+                    {% if evento.descripcion %}
+                    <p class="text-gray-600 text-xs leading-relaxed line-clamp-2 h-8">{{ evento.descripcion }}</p>
+                    {% else %}
+                    <p class="text-gray-400 text-xs italic h-8">Sin descripción</p>
+                    {% endif %}
+                    
+                    <!-- Fecha y Hora compactas -->
+                    <div class="flex items-center justify-between text-xs bg-gray-50 rounded-lg p-2">
+                        <div class="flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-blue-600" style="font-size: 16px;">calendar_today</span>
+                            <span class="text-gray-700 font-medium">{{ evento.fecha_evento }}</span>
                         </div>
-                        
-                        <!-- Botones de acción (a la derecha) -->
-                        <div class="flex gap-2 mt-4 xl:mt-0 items-center">
-                            <button data-id="{{ evento.id }}" data-type="evento" class="btn-view-event flex items-center justify-center px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors text-sm">
-                                <span class="material-symbols-outlined text-sm mr-1">visibility</span>
-                                Ver
+                        <div class="flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-indigo-600" style="font-size: 16px;">schedule</span>
+                            <span class="text-gray-700 font-medium">
+                                {%- set _hora = evento.hora_evento|string -%}
+                                {%- if _hora -%}
+                                    {{ _hora.split(':')[:2]|join(':') }}
+                                {%- else -%}
+                                    --:--
+                                {%- endif -%}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Botones compactos -->
+                    <div class="flex gap-2">
+                        <button data-id="{{ evento.id }}" data-type="evento" class="btn-view-event flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-colors text-xs font-medium">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
+                            <span>Ver</span>
+                        </button>
+                        <form method="POST" action="{{ url_for('eliminar_evento_view', id=evento.id) }}" class="flex-1">
+                            <button type="submit" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="w-full flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-red-500 text-white hover:bg-red-600 transition-colors text-xs font-medium">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
+                                <span>Eliminar</span>
                             </button>
-                            <form method="POST" action="{{ url_for('eliminar_evento_view', id=evento.id) }}" class="inline">
-                                <button type="submit" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="flex items-center justify-center px-3 py-1.5 rounded-lg border border-red-300 text-red-600 hover:bg-red-50 transition-colors text-sm">
-                                    <span class="material-symbols-outlined text-sm mr-1">delete</span>
-                                    Eliminar
-                                </button>
-                            </form>
-                        </div>
+                        </form>
                     </div>
                 </div>
             </div>

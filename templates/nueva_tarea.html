@@ -2,77 +2,133 @@
 {% block title %}Nueva tarea{% endblock %}
 {% block content %}
 
-<div class="d-flex justify-content-center p-5">
-  <div class="card p-4 shadow-sm" style="max-width: 500px; width: 100%;">
-    <h2 class="mb-4 text-center">Crear nueva tarea</h2>
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 py-12 px-4">
+  <div class="w-full max-w-2xl">
+    <!-- Header -->
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full shadow-lg mb-4">
+        <span class="material-symbols-outlined text-white text-3xl">task</span>
+      </div>
+      <h2 class="text-3xl font-bold text-gray-900">Crear nueva tarea</h2>
+      <p class="text-gray-600 text-sm mt-2">Añade una nueva tarea a tu lista de pendientes</p>
+    </div>
 
+    <!-- Error Alert -->
     {% if error %}
-    <div class="alert alert-danger py-2 px-3 mb-3" role="alert">
-      {{ error }}
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm mb-6">
+      <div class="flex items-center">
+        <span class="material-symbols-outlined text-red-500 mr-3">error</span>
+        <p class="text-red-800 text-sm font-medium">{{ error }}</p>
+      </div>
     </div>
     {% endif %}
 
-    <form method="POST" class="needs-validation mt-4" novalidate>
-      <!-- Nombre de la tarea -->
-      <div class="mb-3">
-        <label for="nombre" class="form-label">Nombre de la tarea</label>
-        <input type="text" id="nombre" name="nombre" class="form-control form-control-sm" required>
-        <div class="invalid-feedback">
-          Por favor ingresa el nombre de la tarea.
+    <!-- Form Card -->
+    <div class="bg-white rounded-2xl shadow-2xl p-8">
+      <form method="POST" class="space-y-6">
+        <!-- Nombre de la tarea -->
+        <div>
+          <label for="nombre" class="block text-sm font-semibold text-gray-700 mb-2">
+            <span class="material-symbols-outlined text-sm align-middle mr-1">title</span>
+            Nombre de la tarea
+          </label>
+          <input 
+            type="text" 
+            id="nombre" 
+            name="nombre" 
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200"
+            placeholder="Ej: Revisar informes mensuales"
+            required
+          >
         </div>
-      </div>
 
-      <!-- Descripción -->
-      <div class="mb-3 mt-4">
-        <label for="descripcion" class="form-label">Descripción</label>
-        <textarea id="descripcion" name="descripcion" class="form-control form-control-sm" rows="3"></textarea>
-      </div>
-
-      <!-- Fecha límite -->
-      <div class="mb-3 mt-4">
-        <label for="fecha_limite" class="form-label">Fecha límite</label>
-        <input type="date" id="fecha_limite" name="fecha_limite" class="form-control form-control-sm" required>
-        <div class="invalid-feedback">
-          Por favor selecciona la fecha límite.
+        <!-- Descripción -->
+        <div>
+          <label for="descripcion" class="block text-sm font-semibold text-gray-700 mb-2">
+            <span class="material-symbols-outlined text-sm align-middle mr-1">description</span>
+            Descripción (opcional)
+          </label>
+          <textarea 
+            id="descripcion" 
+            name="descripcion" 
+            rows="3"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200"
+            placeholder="Añade detalles adicionales sobre la tarea..."
+          ></textarea>
         </div>
-      </div>
 
-      <!-- Prioridad -->
-      <div class="mb-3 mt-4">
-        <label for="prioridad" class="form-label">Prioridad</label>
-        <select id="prioridad" name="prioridad" class="form-select form-select-sm" required>
-          <option value="1">Baja</option>
-          <option value="2" selected>Media</option>
-          <option value="3">Alta</option>
-        </select>
-        <div class="invalid-feedback">
-          Por favor selecciona la prioridad.
+        <!-- Fecha y Prioridad - Grid 2 columnas -->
+        <div class="bg-gray-50 rounded-lg p-6 space-y-4">
+          <h3 class="text-sm font-semibold text-gray-700 flex items-center mb-4">
+            <span class="material-symbols-outlined text-sm mr-2">settings</span>
+            Configuración de la tarea
+          </h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Fecha límite -->
+            <div>
+              <label for="fecha_limite" class="block text-sm font-medium text-gray-700 mb-2">
+                Fecha límite *
+              </label>
+              <input 
+                type="date" 
+                id="fecha_limite" 
+                name="fecha_limite"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200"
+                required
+              >
+            </div>
+
+            <!-- Prioridad -->
+            <div>
+              <label for="prioridad" class="block text-sm font-medium text-gray-700 mb-2">
+                Prioridad *
+              </label>
+              <select 
+                id="prioridad" 
+                name="prioridad"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200"
+                required
+              >
+                <option value="1">🟢 Baja</option>
+                <option value="2" selected>🟡 Media</option>
+                <option value="3">🔴 Alta</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Info adicional -->
+          <div class="bg-blue-50 rounded-lg p-3 mt-4">
+            <p class="text-xs text-blue-800 flex items-start">
+              <span class="material-symbols-outlined text-sm mr-2 mt-0.5">info</span>
+              <span>La tarea se creará con estado "Pendiente" por defecto. Podrás cambiarla a "Completada" desde la lista de tareas.</span>
+            </p>
+          </div>
         </div>
-      </div>
 
-      <!-- Estado (por defecto Pendiente) -->
-      <input type="hidden" name="estado" value="Pendiente">
+        <!-- Estado (oculto) -->
+        <input type="hidden" name="estado" value="Pendiente">
 
-      <button type="submit" class="btn btn-primary w-100 mt-4">Crear tarea</button>
-    </form>
+        <!-- Botones -->
+        <div class="flex gap-3 pt-4">
+          <button 
+            type="submit"
+            class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg hover:from-green-600 hover:to-emerald-700 transform hover:scale-[1.02] transition duration-200"
+          >
+            <span class="material-symbols-outlined text-xl">check_circle</span>
+            <span>Crear tarea</span>
+          </button>
+          <a 
+            href="{{ url_for('ver_tareas') }}"
+            class="flex items-center justify-center gap-2 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition duration-200"
+          >
+            <span class="material-symbols-outlined text-xl">cancel</span>
+            <span>Cancelar</span>
+          </a>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
-
-<script>
-// Validación de Bootstrap 5
-(() => {
-  'use strict'
-  const forms = document.querySelectorAll('.needs-validation')
-  Array.from(forms).forEach(form => {
-    form.addEventListener('submit', event => {
-      if (!form.checkValidity()) {
-        event.preventDefault()
-        event.stopPropagation()
-      }
-      form.classList.add('was-validated')
-    }, false)
-  })
-})()
-</script>
 
 {% endblock %}

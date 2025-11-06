@@ -31,6 +31,16 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'clave_secreta_segura')
 
+# Limpieza automática SOLO en desarrollo (cuando debug=True)
+# En producción usa el endpoint /admin/limpiar-datos o un cron job externo
+if os.getenv('FLASK_ENV', 'development') == 'development':
+    try:
+        eventos_eliminados, tareas_eliminadas = limpiar_datos_antiguos(dias=3)
+        if eventos_eliminados > 0 or tareas_eliminadas > 0:
+            print(f"[LIMPIEZA AUTOMÁTICA] Se eliminaron {eventos_eliminados} eventos y {tareas_eliminadas} tareas antiguas (más de 3 días)")
+    except Exception as e:
+        print(f"[ERROR] No se pudo ejecutar la limpieza automática: {e}")
+
 
 # ------------------ HELPER FUNCTIONS ------------------
 
@@ -734,6 +744,57 @@ def ajustes_admin():
     tareas = obtener_tareas(usuario_id) if usuario_id else obtener_tareas()
     auditoria = obtener_auditoria()
     return render_template('ajustes.html', usuarios=usuarios, usuario_id=usuario_id, eventos=eventos, tareas=tareas, auditoria=auditoria)
+
+
+@app.route('/admin/limpiar-datos', methods=['POST'])
+@login_required
+def limpiar_datos_admin():
+    """
+    Endpoint administrativo para ejecutar la limpieza de datos antiguos manualmente.
+    Solo accesible por administradores (rol==3).
+    
+    Puede ser llamado:
+    - Manualmente desde un botón en la interfaz de administración
+    - Por un cron job externo en producción
+    - Por un scheduler como Heroku Scheduler
+    """
+    usuario_actual = session.get('usuario')
+    user = obtener_usuario_por_nombre(usuario_actual)
+    
+    # Solo admin (rol==3)
+    if not user or user.get('rol', 1) != 3:
+        return jsonify({'error': 'No tienes permisos de administrador'}), 403
+    
+    try:
+        # Obtener días desde parámetro o usar 3 por defecto
+        dias = int(request.form.get('dias', 3))
+        if dias < 1 or dias > 365:
+            return jsonify({'error': 'El número de días debe estar entre 1 y 365'}), 400
+        
+        eventos_eliminados, tareas_eliminadas = limpiar_datos_antiguos(dias=dias)
+        
+        return jsonify({
+            'success': True,
+            'eventos_eliminados': eventos_eliminados,
+            'tareas_eliminadas': tareas_eliminadas,
+            'mensaje': f'Se eliminaron {eventos_eliminados} eventos y {tareas_eliminadas} tareas con más de {dias} días de antigüedad'
+        }), 200
+    except Exception as e:
+        return jsonify({'error': f'Error al limpiar datos: {str(e)}'}), 500
+
+
+# ------------------ PÁGINAS INFORMATIVAS ------------------
+
+@app.route('/ayuda')
+def ayuda():
+    """Página de ayuda con información básica del sistema."""
+    return render_template('ayuda.html')
+
+
+@app.route('/contacto')
+def contacto():
+    """Página de contacto simple."""
+    return render_template('contacto.html')
 
 
 if __name__ == '__main__':

@@ -1,20 +1,154 @@
 {% extends "base.html" %}
 {% block title %}Registro{% endblock %}
 {% block content %}
-<h2 class="m-4">Registrarse</h2>
-<form method="POST" class="col-md-6 mx-auto p-10">
-    <input class="form-control mb-3" type="text" name="usuario" placeholder="Usuario" required>
-        <input class="form-control mb-2" type="password" name="password" placeholder="Contraseña" required>
-        <small class="text-muted d-block mb-3" style="line-height:1.2">
-            Requisitos: mínimo 8 caracteres, al menos 1 mayúscula, 1 minúscula y 1 número.
-        </small>
-    <input class="form-control mb-3" type="password" name="confirm" placeholder="Confirmar contraseña" required>
-    <button class="btn btn-success w-100" type="submit">Crear cuenta</button>
-</form>
-{% if error %}
-<p class="text-danger text-center mt-3">{{ error }}</p>
-{% endif %}
-<div class="text-center mt-3">
-    <a href="{{ url_for('login') }}" class="small">Ya tengo cuenta, iniciar sesión</a>
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <!-- Header -->
+        <div class="text-center">
+            <div class="flex justify-center mb-4">
+                <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-full p-4 shadow-lg">
+                    <span class="material-symbols-outlined text-white text-5xl">person_add</span>
+                </div>
+            </div>
+            <h2 class="text-4xl font-extrabold text-gray-900 mb-2">
+                Crear cuenta nueva
+            </h2>
+            <p class="text-gray-600 text-sm">
+                Únete y comienza a organizar tu día a día
+            </p>
+        </div>
+
+        <!-- Errores -->
+        {% if error %}
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm">
+            <div class="flex items-center">
+                <span class="material-symbols-outlined text-red-500 mr-3">error</span>
+                <p class="text-red-800 text-sm font-medium">{{ error }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Formulario -->
+        <div class="bg-white rounded-2xl shadow-2xl p-8 space-y-6">
+            <form method="POST" class="space-y-5">
+                <!-- Usuario -->
+                <div>
+                    <label for="usuario" class="block text-sm font-medium text-gray-700 mb-2">
+                        Usuario
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <span class="material-symbols-outlined text-gray-400 text-xl">person</span>
+                        </span>
+                        <input 
+                            id="usuario"
+                            type="text" 
+                            name="usuario" 
+                            placeholder="Elige un nombre de usuario"
+                            class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200 text-gray-900 placeholder-gray-400"
+                            required
+                        >
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1 ml-1">
+                        Entre 3 y 50 caracteres, solo letras y números
+                    </p>
+                </div>
+
+                <!-- Contraseña -->
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                        Contraseña
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <span class="material-symbols-outlined text-gray-400 text-xl">lock</span>
+                        </span>
+                        <input 
+                            id="password"
+                            type="password" 
+                            name="password" 
+                            placeholder="Crea una contraseña segura"
+                            class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200 text-gray-900 placeholder-gray-400"
+                            required
+                        >
+                    </div>
+                    <div class="bg-blue-50 rounded-lg p-3 mt-2">
+                        <p class="text-xs text-blue-800 font-medium mb-1">Requisitos de contraseña:</p>
+                        <ul class="text-xs text-blue-700 space-y-1 ml-2">
+                            <li class="flex items-start">
+                                <span class="material-symbols-outlined text-xs mr-1 mt-0.5">check_circle</span>
+                                Mínimo 8 caracteres
+                            </li>
+                            <li class="flex items-start">
+                                <span class="material-symbols-outlined text-xs mr-1 mt-0.5">check_circle</span>
+                                Al menos 1 letra mayúscula
+                            </li>
+                            <li class="flex items-start">
+                                <span class="material-symbols-outlined text-xs mr-1 mt-0.5">check_circle</span>
+                                Al menos 1 letra minúscula
+                            </li>
+                            <li class="flex items-start">
+                                <span class="material-symbols-outlined text-xs mr-1 mt-0.5">check_circle</span>
+                                Al menos 1 número
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Confirmar contraseña -->
+                <div>
+                    <label for="confirm" class="block text-sm font-medium text-gray-700 mb-2">
+                        Confirmar contraseña
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <span class="material-symbols-outlined text-gray-400 text-xl">lock_reset</span>
+                        </span>
+                        <input 
+                            id="confirm"
+                            type="password" 
+                            name="confirm" 
+                            placeholder="Repite tu contraseña"
+                            class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200 text-gray-900 placeholder-gray-400"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <!-- Botón submit -->
+                <button 
+                    type="submit"
+                    class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white py-3 px-4 rounded-lg font-semibold shadow-lg hover:from-purple-600 hover:to-pink-700 transform hover:scale-[1.02] transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                >
+                    <span class="material-symbols-outlined text-xl">how_to_reg</span>
+                    <span>Crear mi cuenta</span>
+                </button>
+            </form>
+
+            <!-- Divider -->
+            <div class="relative">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-300"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-white text-gray-500">¿Ya tienes cuenta?</span>
+                </div>
+            </div>
+
+            <!-- Link a login -->
+            <a 
+                href="{{ url_for('login') }}"
+                class="w-full flex items-center justify-center gap-2 bg-white border-2 border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-semibold hover:bg-gray-50 hover:border-gray-400 transform hover:scale-[1.02] transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            >
+                <span class="material-symbols-outlined text-xl">login</span>
+                <span>Iniciar sesión</span>
+            </a>
+        </div>
+
+        <!-- Footer -->
+        <p class="text-center text-gray-500 text-xs">
+            © 2025 My Planner. Todos los derechos reservados.
+        </p>
+    </div>
 </div>
 {% endblock %}
