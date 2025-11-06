@@ -266,10 +266,13 @@ def eliminar_evento(evento_id):
         conn.close()
 
 # OBTENER EVENTOS
-def obtener_eventos():  
+def obtener_eventos(usuario_id=None):
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM eventos ORDER BY fecha_evento ASC, hora_evento ASC")
+    if usuario_id:
+        cursor.execute("SELECT * FROM eventos WHERE creador_evento = %s ORDER BY fecha_evento ASC, hora_evento ASC", (usuario_id,))
+    else:
+        cursor.execute("SELECT * FROM eventos ORDER BY fecha_evento ASC, hora_evento ASC")
     eventos = cursor.fetchall()
     conn.close()
     return eventos
@@ -396,10 +399,13 @@ def actualizar_estado_tarea(tarea_id, estado):
         conn.close()
 
 # OBTENER TAREAS
-def obtener_tareas():
+def obtener_tareas(usuario_id=None):
     conexion = get_connection()
     with conexion.cursor(dictionary=True) as cursor:
-        cursor.execute("SELECT * FROM tareas")
+        if usuario_id:
+            cursor.execute("SELECT * FROM tareas WHERE creador_tarea = %s", (usuario_id,))
+        else:
+            cursor.execute("SELECT * FROM tareas")
         tareas = cursor.fetchall()
         for t in tareas:
             estado_val = t.get('estado', 0)

@@ -119,21 +119,18 @@ def register():
         password = request.form.get('password', '')
         confirm = request.form.get('confirm', '')
 
-        # Reglas contraseña en producción: min 8, mayúscula, minúscula y dígito (SIN símbolos requeridos)
-        patron_password_prod = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$'
-        # En desarrollo permitimos algo más simple (mínimo 4 caracteres) para agilizar pruebas
-        patron_password_dev = r'^.{4,}$'
-        es_produccion = os.getenv('FLASK_ENV') == 'production'
-        patron_password = patron_password_prod if es_produccion else patron_password_dev
+    # Reglas contraseña: min 8, al menos una mayúscula, una minúscula y un número, sin símbolos
+    patron_password = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$'
 
         # Validaciones básicas
         if not validar_no_vacio(usuario) or not validar_no_vacio(password):
-            return render_template('register.html', error='Usuario y contraseña requeridos')
+            return render_template('register.html', error='Usuario y contraseña son obligatorios')
         if not validar_longitud(usuario, 50, 3):
-            return render_template('register.html', error='Usuario 3-50 caracteres')
+            return render_template('register.html', error='El usuario debe tener entre 3 y 50 caracteres')
+        if not re.match(r'^[a-zA-Z0-9]+$', usuario):
+            return render_template('register.html', error='El usuario solo puede contener letras y números')
         if not re.match(patron_password, password):
-            msg = 'Contraseña debe tener mínimo 8 caracteres, incluir mayúscula, minúscula y número' if es_produccion else 'Contraseña mínima 4 caracteres (en dev).'
-            return render_template('register.html', error=msg)
+            return render_template('register.html', error='La contraseña debe tener mínimo 8 caracteres, incluir mayúscula, minúscula y número')
         if password != confirm:
             return render_template('register.html', error='Las contraseñas no coinciden')
 
@@ -165,10 +162,13 @@ def dashboard():
     - Filtra eventos y tareas del día actual para mostrarlos en el dashboard.
     - Recupera métricas semanales y eventos de mañana.
     """
-    eventos_data = obtener_eventos()
-    tareas_data = obtener_tareas()
-    completadas_semana, total_semana = obtener_resumen_semana()
-    eventos_manana = obtener_eventos_manana()
+    usuario_actual = session.get('usuario')
+    user = obtener_usuario_por_nombre(usuario_actual)
+    usuario_id = user['id'] if user else None
+    eventos_data = obtener_eventos(usuario_id)
+    tareas_data = obtener_tareas(usuario_id)
+    completadas_semana, total_semana = obtener_resumen_semana()  # Opcional: filtrar por usuario si lo deseas
+    eventos_manana = obtener_eventos_manana()  # Opcional: filtrar por usuario si lo deseas
     fecha_hoy = datetime.now().date()
 
     # Usar funciones de filtrado
@@ -204,7 +204,10 @@ def ver_eventos():
 
     Plantilla: `eventos.html` espera una lista de eventos.
     """
-    eventos = obtener_eventos()
+    usuario_actual = session.get('usuario')
+    user = obtener_usuario_por_nombre(usuario_actual)
+    usuario_id = user['id'] if user else None
+    eventos = obtener_eventos(usuario_id)
     return render_template('eventos.html', eventos=eventos)
 
 
@@ -312,7 +315,10 @@ def eliminar_evento_view(id):
 @login_required
 def ver_tareas():
     """Lista de tareas."""
-    tareas = obtener_tareas()
+    usuario_actual = session.get('usuario')
+    user = obtener_usuario_por_nombre(usuario_actual)
+    usuario_id = user['id'] if user else None
+    tareas = obtener_tareas(usuario_id)
     return render_template('tareas.html', tareas=tareas)
 
 
@@ -413,7 +419,10 @@ def api_eventos():
     necesitamos todos para que FullCalendar pueda mostrarlos y permitir
     arrastrar entre días sin que desaparezcan.
     """
-    eventos_data = obtener_eventos()
+    usuario_actual = session.get('usuario')
+    user = obtener_usuario_por_nombre(usuario_actual)
+    usuario_id = user['id'] if user else None
+    eventos_data = obtener_eventos(usuario_id)
 
     eventos_json = []
     for e_data in eventos_data:
@@ -499,7 +508,10 @@ def actualizar_evento_api(evento_id):
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     
-    eventos_data = obtener_eventos()
+    usuario_actual = session.get('usuario')
+    user = obtener_usuario_por_nombre(usuario_actual)
+    usuario_id = user['id'] if user else None
+    eventos_data = obtener_eventos(usuario_id)
     evento_data = next((e for e in eventos_data if e.get('id') == evento_id), None)
     if not evento_data:
         return jsonify({'error': 'Evento actualizado pero no encontrado'}), 500
@@ -639,7 +651,10 @@ def actualizar_tarea_api(tarea_id):
         return jsonify({'error': 'Error interno'}), 500
 
     # Obtener tarea actualizada
-    tareas_data = obtener_tareas()
+    usuario_actual = session.get('usuario')
+    user = obtener_usuario_por_nombre(usuario_actual)
+    usuario_id = user['id'] if user else None
+    tareas_data = obtener_tareas(usuario_id)
     tarea_data = next((t for t in tareas_data if t.get('id') == tarea_id), None)
     if not tarea_data:
         return jsonify({'error': 'Tarea actualizada pero no encontrada'}), 500
