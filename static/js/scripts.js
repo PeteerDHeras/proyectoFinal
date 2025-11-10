@@ -1,20 +1,29 @@
 /**
  * SCRIPTS.JS - JavaScript Principal del Proyecto
  * 
- * Este archivo contiene toda la lógica del lado del cliente para:
- * - Gestión del calendario interactivo (FullCalendar)
- * - Búsqueda en vivo de tareas y eventos
- * - Actualización dinámica de estados de tareas (checkboxes)
- * - Sistema de modales para ver/editar/eliminar eventos y tareas
- * - Notificaciones toast
- * - Manipulación del DOM sin recargar página
+ * Responsabilidad: Orquestar toda la interacción cliente (UX y sincronización ligera)
+ * sin framework adicional. Mantiene el DOM consistente frente a cambios de estado
+ * usando "optimistic updates" y sólo recarga cuando es estrictamente necesario.
+ * 
+ * Incluye:
+ * - Calendario (FullCalendar) + drag & drop + resize + creación rápida.
+ * - Búsqueda en vivo (eventos / tareas) con debounce.
+ * - Actualización de estado de tareas (checkbox) + contador.
+ * - Sistema de modales reutilizable (ver / editar / eliminar) inyectado dinámicamente.
+ * - Toasts ligeros para feedback inmediato.
+ * 
+ * Patrones clave:
+ * - "Prefijos de ID": Las tareas en el calendario se distinguen por id "t-<id>".
+ * - "Server authoritative" tras guardar: se normalizan datos usando la respuesta del backend.
+ * - "Optimistic UI": Se modifica el DOM antes de confirmación del servidor y se revierte si falla.
+ * - "Single overlay policy": Antes de abrir un modal se elimina cualquier overlay previo para evitar fugas.
  * 
  * Estructura del archivo:
- * 1. Funciones helper globales (toast, updateItemInDOM, removeItemFromDOM)
- * 2. Inicialización del calendario (FullCalendar)
- * 3. Búsqueda en vivo (tareas y eventos)
- * 4. Gestión de checkboxes de tareas
- * 5. Sistema de modales (ver/editar/eliminar)
+ * 1. Helpers globales (toast, updateItemInDOM, removeItemFromDOM).
+ * 2. FullCalendar: configuración, ciclo de vida y sincronización con API.
+ * 3. Live Search: filtros instantáneos con debounce.
+ * 4. Checkboxes de tareas: estado + feedback + reversión.
+ * 5. Modales dinámicos: ver / editar / eliminar.
  */
 
 // ============================================================================
@@ -251,8 +260,16 @@ function removeItemFromDOM(type, id) {
 // ============================================================================
 // SECCIÓN 2: INICIALIZACIÓN DEL CALENDARIO (FullCalendar)
 // ============================================================================
-// Configuración y renderizado del calendario interactivo con drag & drop,
-// resize de eventos, y navegación entre vistas (mes/semana/día)
+// Configuración y renderizado del calendario interactivo con drag & drop y resize.
+// Ciclo de vida:
+//   - Se inicializa en DOMContentLoaded si existe #calendar.
+//   - Obtiene datos desde /api/eventos (que mezcla eventos y tareas).
+//   - Al mover (drop/resize) se envía PUT inmediato (sin modal) para persistir.
+//   - Se distinguen tareas vs eventos por prefijo de id ("t-"), evitando más
+//     llamadas de detalle para categorizar.
+// Notas de rendimiento:
+//   - Refetch de eventos tras crear/editar para asegurar coherencia sin recargar.
+//   - Posible mejora futura: aplicar cache por rango + parámetros start/end ya soportados.
 
 document.addEventListener('DOMContentLoaded', function () {
   const calendarEl = document.getElementById('calendar');
@@ -273,7 +290,13 @@ document.addEventListener('DOMContentLoaded', function () {
     height: 760,
     editable: true,          // permite drag & drop
     selectable: true,
-    events: '/api/eventos',  // ahora devuelve TODOS los eventos
+    // Rango de horas visible en vistas semana/día
+    slotMinTime: '06:00:00',      // empezar a las 06:00
+    slotMaxTime: '24:00:00',      // mostrar hasta medianoche (FullCalendar corta slots vacíos al final)
+    scrollTime: '06:00:00',       // al entrar en vista week/day hace scroll inicial a las 06:00
+    slotDuration: '00:30:00',     // intervalos de media hora (puedes cambiar a '01:00:00')
+    slotLabelFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+  events: '/api/eventos',  // ahora devuelve eventos + tareas (ver backend)
     eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
 
     // Crear nuevo evento al hacer click en un día vacío -> modal rápido
@@ -281,13 +304,32 @@ document.addEventListener('DOMContentLoaded', function () {
       abrirModalCreacionRapida(info.dateStr);
     },
 
-    // Abrir modal de evento directamente al hacer click
+    // Abrir modal de evento o tarea directamente al hacer click
     eventClick: function(info) {
       const tmp = document.createElement('button');
       tmp.style.display = 'none';
-      tmp.className = 'btn-view-event';
-      tmp.setAttribute('data-id', info.event.id);
-      tmp.setAttribute('data-type', 'evento');
+      
+      // Detectar si es tarea o evento por el prefijo del ID
+      // RACIONAL: Reutilizamos el mismo listener delegado de modales que espera
+      // botones con clases .btn-view-event / .btn-view-task. En lugar de duplicar
+      // lógica aquí, creamos un botón oculto, disparamos el click y luego lo
+      // eliminamos. Esto mantiene un único flujo de apertura de modales.
+      const eventId = info.event.id;
+      const isTarea = eventId.startsWith('t-');
+      
+      if (isTarea) {
+        // Es una tarea - extraer el ID numérico (quitar el prefijo 't-')
+        const tareaId = eventId.substring(2);
+        tmp.className = 'btn-view-task';
+        tmp.setAttribute('data-id', tareaId);
+        tmp.setAttribute('data-type', 'tarea');
+      } else {
+        // Es un evento
+        tmp.className = 'btn-view-event';
+        tmp.setAttribute('data-id', eventId);
+        tmp.setAttribute('data-type', 'evento');
+      }
+      
       document.body.appendChild(tmp);
       tmp.click();
       tmp.remove();
@@ -446,7 +488,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   /**
-   * Actualiza un evento en el servidor después de drag/drop o resize
+     * Actualiza un evento o tarea en el servidor después de drag/drop o resize
    * Valida fechas y envía PUT request al backend
    * 
    * @param {Object} info - Información del evento de FullCalendar
@@ -454,6 +496,11 @@ document.addEventListener('DOMContentLoaded', function () {
    */
   function actualizarEventoDesdeCalendario(info, esResize) {
     const event = info.event;
+      const eventId = event.id;
+      const isTarea = eventId.startsWith('t-');
+      const numericId = isTarea ? eventId.substring(2) : eventId;
+      // RACIONAL: Prefijo "t-" evita colisiones numéricas y permite distinguir
+      // la naturaleza del item sin propiedades adicionales en FullCalendar.
 
     const startParts = splitDateTime(event.start);
     let endParts = null;
@@ -463,6 +510,8 @@ document.addEventListener('DOMContentLoaded', function () {
       // Si se intenta resize pero no hay fecha fin previa, calcular una por defecto (30 min)
       const fallbackEnd = new Date(event.start.getTime() + 30 * 60 * 1000);
       endParts = splitDateTime(fallbackEnd);
+      // RACIONAL: Proporcionar un fin sintético evita revert inmediato y
+      // ofrece una duración mínima coherente para eventos redimensionados.
     }
 
     // Validación: la fecha/hora de fin no puede ser anterior o igual al inicio
@@ -476,20 +525,37 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    // Construir payload para enviar al endpoint PUT /api/eventos/:id
-    // Conservar descripción original si existe en extendedProps
-    const descripcionOriginal = event.extendedProps && event.extendedProps.descripcion ? event.extendedProps.descripcion : null;
-    const payload = {
-      nombre: event.title,
-      fecha_evento: startParts.fecha,
-      hora_evento: startParts.hora,
-      fecha_fin: endParts ? endParts.fecha : null,
-      hora_fin: endParts ? endParts.hora : null,
-      ...(descripcionOriginal ? { descripcion: descripcionOriginal } : {})
-    };
+      // Construir payload según si es tarea o evento
+      let endpoint, payload;
+    
+      if (isTarea) {
+        // Para tareas: actualizar fecha_limite y hora_evento
+        endpoint = `/api/tareas/${numericId}`;
+        payload = {
+          nombre: event.title,
+          fecha_limite: startParts.fecha,
+          hora_evento: startParts.hora || null,
+          prioridad: event.extendedProps?.prioridad || 'media',
+          estado: event.extendedProps?.estado || 'pendiente',
+          descripcion: event.extendedProps?.descripcion || null
+        };
+      } else {
+        // Para eventos: actualizar con fecha_evento, hora_evento, fecha_fin, hora_fin
+        endpoint = `/api/eventos/${numericId}`;
+        payload = {
+          nombre: event.title,
+          fecha_evento: startParts.fecha,
+          hora_evento: startParts.hora,
+          fecha_fin: endParts ? endParts.fecha : null,
+          hora_fin: endParts ? endParts.hora : null,
+          descripcion: event.extendedProps?.descripcion || null
+        };
+      }
+      // NOTA: Se confía en datos "extendedProps" existentes; si el backend cambia
+      // estructura la UI seguirá funcionando (gracia a valores por defecto).
 
     // Enviar actualización al servidor
-  fetch(`/api/eventos/${event.id}`, {
+      fetch(endpoint, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -499,12 +565,12 @@ document.addEventListener('DOMContentLoaded', function () {
       return r.json();
     })
     .then(data => {
-      // Evento actualizado correctamente (opcional: mostrar notificación)
-      // console.log('Evento actualizado', data);
+        // Actualizado correctamente
+        showToast(isTarea ? 'Tarea actualizada' : 'Evento actualizado', 'success');
     })
     .catch(err => {
       console.error(err);
-      alert('No se pudo actualizar el evento. Se revierte el cambio.');
+        alert('No se pudo actualizar. Se revierte el cambio.');
       info.revert(); // Revertir cambios visuales si falla el servidor
     });
   }
@@ -514,7 +580,9 @@ document.addEventListener('DOMContentLoaded', function () {
 // SECCIÓN 3: BÚSQUEDA EN VIVO (Live Search)
 // ============================================================================
 // Filtrado en tiempo real de tareas y eventos según el texto de búsqueda
-// Utiliza debounce para optimizar rendimiento
+// Utiliza debounce para reducir trabajo en cada pulsación (actual 150ms).
+// Escala O(n) sobre elementos renderizados; si el volumen creciera se podría
+// migrar a filtrado por atributos data-* o preindexación.
 
 document.addEventListener('DOMContentLoaded', function() {
   // Función debounce para evitar ejecuciones excesivas durante escritura rápida
@@ -561,7 +629,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // SECCIÓN 4: GESTIÓN DE CHECKBOXES DE TAREAS
   // ============================================================================
   // Maneja el cambio de estado de tareas (completada/pendiente)
-  // Implementa "optimistic updates" para feedback instantáneo
+  // Implementa "optimistic updates" aplicando clases y badges antes de respuesta.
+  // Si el servidor falla se revierte completamente el DOM, manteniendo consistencia.
   // Funciona tanto en tareas.html como en dashboard.html
 
   document.querySelectorAll('.tarea-checkbox').forEach(checkbox => {
@@ -694,7 +763,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // ============================================================================
 // Gestiona la apertura y funcionalidad de modales para eventos y tareas
 // Utiliza event delegation para capturar clicks en botones dinámicos
-// Soporta modo visualización y edición con validación de datos
+// Soporta modo visualización y edición con validación de datos.
+// Memoria / Limpieza: Antes de inyectar un nuevo modal se elimina el wrapper
+// previo (single overlay) evitando acumulación de nodos no referenciados.
+// Mejorable: Podría centralizarse en un ModalManager para reutilizar transiciones.
 
 // Event listener delegado a nivel de documento para capturar clicks en botones de ver/editar
 document.addEventListener('click', function (e) {
@@ -715,7 +787,12 @@ document.addEventListener('click', function (e) {
       return r.text();
     })
     .then(html => {
-      // Insertar el fragmento HTML del modal en el documento
+      // Evitar duplicados: si ya hay un overlay previo, eliminar su contenedor
+      const existingOverlay = document.getElementById('item-modal-overlay');
+      if (existingOverlay && existingOverlay.parentElement) {
+        existingOverlay.parentElement.remove();
+      }
+      // Insertar el nuevo fragmento HTML del modal en el documento
       const wrapper = document.createElement('div');
       wrapper.innerHTML = html;
       document.body.appendChild(wrapper);
@@ -747,8 +824,12 @@ document.addEventListener('click', function (e) {
 
       // Event listeners para cerrar el modal
       closeBtn && closeBtn.addEventListener('click', closeModal);
+      
+      // Cerrar modal al hacer clic fuera del contenido (single click)
       overlay.addEventListener('click', (ev) => {
-        if (ev.target === overlay) closeModal(); // Cerrar al hacer click fuera del modal
+        if (ev.target === overlay) {
+          closeModal();
+        }
       });
 
       // --- BOTÓN EDITAR: Activar modo edición ---
@@ -764,30 +845,15 @@ document.addEventListener('click', function (e) {
         cancelBtn.classList.add('flex');
       });
 
-      // --- BOTÓN CANCELAR: Restaurar valores originales ---
-      // Revierte cambios no guardados y vuelve a modo visualización
+      // --- BOTÓN CANCELAR: Restaurar valores originales y cerrar modal ---
+      // Revierte cambios no guardados y cierra el modal
       cancelBtn && cancelBtn.addEventListener('click', () => {
-        Array.from(form.querySelectorAll('input, textarea, select')).forEach(i => {
-          if (Object.prototype.hasOwnProperty.call(originalValues, i.name)) {
-            i.value = originalValues[i.name];
-          }
-          if (i.tagName.toLowerCase() === 'select') {
-            i.setAttribute('disabled', '');
-          } else {
-            i.setAttribute('readonly', '');
-          }
-        });
-        // Mostrar/ocultar botones usando clases de Tailwind
-        saveBtn.classList.add('hidden');
-        saveBtn.classList.remove('flex');
-        cancelBtn.classList.add('hidden');
-        cancelBtn.classList.remove('flex');
-        editBtn.classList.remove('hidden');
-        editBtn.classList.add('flex');
+        closeModal();
       });
 
-      // --- BOTÓN GUARDAR: Enviar cambios al servidor ---
-      // Construye payload y envía PUT request, actualiza DOM si éxito
+  // --- BOTÓN GUARDAR: Enviar cambios al servidor ---
+  // Construye payload y envía PUT request. Ahora, tras guardar siempre recargamos la vista
+  // para evitar estados inconsistentes en listados (petición del usuario).
       saveBtn && saveBtn.addEventListener('click', () => {
         const formData = new FormData(form);
         const payload = {
@@ -846,6 +912,17 @@ document.addEventListener('click', function (e) {
               return;
             }
             showToast('Guardado correctamente', 'success');
+            if (type === 'tarea') {
+              // Sólo recargar para tareas (solicitud usuario) para refrescar listado.
+              closeModal();
+              setTimeout(() => { location.reload(); }, 200);
+              return; // terminar flujo tras programar recarga
+            } else {
+              // Evento: mantener actualización en vivo y refrescar calendario si existe
+              if (window.calendar) {
+                try { window.calendar.refetchEvents(); } catch(e) { console.warn('No se pudo refrescar calendario', e); }
+              }
+            }
           } catch (e) {
             console.warn('No se pudo actualizar el DOM localmente', e);
           }
@@ -878,6 +955,10 @@ document.addEventListener('click', function (e) {
               if (type === 'evento' && window.calendar) {
                 try { window.calendar.refetchEvents(); } catch(e) { console.warn('Refetch falló', e); }
               }
+              // También refrescar por si se eliminó tarea que se muestra en calendario (futuro)
+              if (type === 'tarea' && window.calendar) {
+                try { window.calendar.refetchEvents(); } catch(e) { console.warn('Refetch falló', e); }
+              }
             })
             .catch(err => { console.error(err); alert('Error al eliminar el elemento'); });
       });
@@ -893,3 +974,8 @@ document.addEventListener('click', function (e) {
       alert('No se pudo cargar la vista del evento');
     });
 });
+
+// Animación para aviso ligero en overlay (shake)
+const styleShake = document.createElement('style');
+styleShake.textContent = `@keyframes shake { 0%{transform:translateY(0);} 25%{transform:translateY(-2px);} 50%{transform:translateY(2px);} 75%{transform:translateY(-2px);} 100%{transform:translateY(0);} }`;
+document.head.appendChild(styleShake);

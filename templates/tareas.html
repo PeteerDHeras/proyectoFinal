@@ -53,7 +53,7 @@
 
         <!-- Botón Crear Nueva -->
         <div class="px-4">
-            <a href="{{ url_for('crear_tarea_view') }}"
+            <a href="{{ url_for('crear_tarea_view', referer='tareas') }}"
                 class="inline-flex items-center justify-center rounded-lg px-4 py-2 bg-green-500 text-white hover:bg-green-600 transition-colors">
                 <span class="material-symbols-outlined mr-2">add_task</span>
                 Crear nueva tarea
@@ -101,10 +101,17 @@
                                 {% else %}Alta{% endif %}
                             </span>
 
-                            <!-- Fecha -->
+                            <!-- Fecha y (opcional) hora -->
                             <span class="flex items-center text-gray-500 text-sm">
                                 <span class="material-symbols-outlined text-sm mr-1">event</span>
                                 {{ tarea.fecha_limite }}
+                                {% if tarea.hora_evento %}
+                                    <span class="mx-1 text-gray-300">|</span>
+                                    <span class="flex items-center">
+                                        <span class="material-symbols-outlined text-xs mr-1">schedule</span>
+                                        {{ tarea.hora_evento }}
+                                    </span>
+                                {% endif %}
                             </span>
 
                             <!-- Estado -->

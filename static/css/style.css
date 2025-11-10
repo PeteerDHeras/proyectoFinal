@@ -54,13 +54,22 @@
 body {
   background-color: #ffffff;
   color: #ffffff;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Inter','Segoe UI', sans-serif;
 }
 main {
   background-color: rgb(255, 255, 255);
   color: #000000;
   text-align: center;
 }
+/* Mantener altura mínima para permitir footer sticky y espacio para contenido */
+html, body { min-height:100vh; }
+body { display:flex; flex-direction:row; }
+/* Wrapper principal si se usa flex en base.html */
+.d-flex { width:100%; }
+
+/* Footer fijo visible siempre */
+.site-footer { position:fixed; bottom:0; left:0; right:0; background:#f8f9fa; z-index:1050; }
+main { padding-bottom:4.5rem; } /* espacio para footer */
 
 /* Botones globales */
 .btn {
@@ -131,6 +140,8 @@ form textarea:focus {
   text-decoration: none;
   border-radius: 0.5rem;
   transition: background-color 0.18s ease, transform 0.12s ease, color 0.18s ease;
+  font-family: 'Inter','Segoe UI',sans-serif;
+  font-weight:500;
 }
 
 .sidebar-link:hover {
@@ -176,7 +187,7 @@ form textarea:focus {
 #calendar {
   background-color: #f9fafb;
   color: #414141;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Inter','Segoe UI', sans-serif;
 }
 
 /* Encabezado y título */
@@ -227,6 +238,47 @@ form textarea:focus {
   border: none;
   border-radius: 6px;
   font-weight: 500;
+}
+
+/* Diferenciar tareas agregadas al calendario */
+.fc-daygrid-event.tarea-evento { 
+  background: #10b981 !important; 
+  color: #ffffff !important;
+  border: none !important; 
+  border-radius: 6px;
+  font-weight: 500;
+  padding: 2px 6px;
+}
+
+.fc-daygrid-event.tarea-evento .fc-event-title, 
+.fc-daygrid-event.tarea-evento .fc-event-time { 
+  color: #ffffff !important;
+  display: block;
+}
+
+/* En vistas de semana / día mostrar tareas con estilo verde */
+.fc-timegrid-event.tarea-evento,
+.fc-timeGridWeek .tarea-evento, 
+.fc-timeGridDay .tarea-evento { 
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 6px;
+  padding: 2px 6px !important;
+}
+
+.fc-timegrid-event.tarea-evento .fc-event-title,
+.fc-timegrid-event.tarea-evento .fc-event-time,
+.fc-timeGridWeek .tarea-evento .fc-event-title, 
+.fc-timeGridDay .tarea-evento .fc-event-title,
+.fc-timeGridWeek .tarea-evento .fc-event-time, 
+.fc-timeGridDay .tarea-evento .fc-event-time { 
+  color: #ffffff !important;
+}
+
+/* Sidebar sticky en pantallas grandes */
+@media (min-width: 768px) {
+  #sidebar { position:sticky; top:0; height:100vh; overflow-y:auto; }
 }
 
 .fc .fc-event-title,

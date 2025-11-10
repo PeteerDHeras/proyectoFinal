@@ -98,6 +98,49 @@ def validar_fecha_no_pasada(fecha_str):
     return f >= hoy
 
 
+def validar_fecha_hora_no_pasada(fecha_str, hora_str):
+    """Valida que la fecha y hora no sean anteriores al momento actual.
+    
+    Si la fecha es futura, retorna True sin importar la hora.
+    Si la fecha es hoy, valida que la hora no sea anterior a la hora actual.
+
+    Args:
+        fecha_str (str): Fecha en formato YYYY-MM-DD
+        hora_str (str): Hora en formato HH:MM
+
+    Returns:
+        bool: True si la fecha/hora es actual o posterior.
+    """
+    if not validar_fecha_formato(fecha_str):
+        return False
+    
+    f = fecha_a_date(fecha_str)
+    if f is None:
+        return False
+    
+    ahora = datetime.now()
+    hoy = ahora.date()
+    
+    # Si la fecha es futura, es válida
+    if f > hoy:
+        return True
+    
+    # Si la fecha es anterior a hoy, no es válida
+    if f < hoy:
+        return False
+    
+    # Si la fecha es hoy, validar la hora
+    if not hora_str:
+        return True  # Si no hay hora especificada, asumir válido
+    
+    try:
+        hora_evento = datetime.strptime(hora_str, '%H:%M').time()
+        hora_actual = ahora.time()
+        return hora_evento >= hora_actual
+    except (ValueError, TypeError):
+        return False
+
+
 def validar_hora_formato(hora_str):
     """Valida que una hora tenga formato HH:MM válido.
     

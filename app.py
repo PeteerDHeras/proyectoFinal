@@ -18,7 +18,7 @@ from utils import (normalizar_hora, normalizar_fecha, validar_fechas,
                    limpiar_valor_opcional, filtrar_eventos_por_fecha, 
                    filtrar_tareas_por_fecha, validar_texto_seguro, 
                    validar_fecha_formato, validar_hora_formato, validar_prioridad, validar_estado,
-                   validar_fecha_no_pasada, validar_no_vacio, sanitizar_texto,
+                   validar_fecha_no_pasada, validar_fecha_hora_no_pasada, validar_no_vacio, sanitizar_texto,
                    validar_longitud, validar_rango_horas)
 import os
 from dotenv import load_dotenv
@@ -278,6 +278,9 @@ def crear_evento_view():
 
     Soporta fecha y hora de inicio; fecha/hora de fin son opcionales.
     """
+    # Capturar de dónde viene (referer)
+    referer = request.args.get('referer', 'dashboard')
+    
     if request.method == 'POST':
         # VALIDAR DATOS DEL FORMULARIO
         nombre = sanitizar_texto(request.form.get('nombre', ''))
@@ -288,30 +291,37 @@ def crear_evento_view():
         descripcion = sanitizar_texto(request.form.get('descripcion', ''))
         fecha_fin = request.form.get('fecha_fin', '').strip() or None
         hora_fin = request.form.get('hora_fin', '').strip() or None
+        referer_form = request.form.get('referer', 'dashboard')
 
         # Validar no vacío y longitud
         if not validar_no_vacio(nombre):
-            return render_template('nuevo_evento.html', error='El nombre no puede estar vacío', fecha_preseleccionada=fecha_evento)
+            return render_template('nuevo_evento.html', error='El nombre no puede estar vacío', fecha_preseleccionada=fecha_evento, referer=referer_form)
         if not validar_longitud(nombre, 100, 3):
-            return render_template('nuevo_evento.html', error='Longitud de nombre inválida (3-100)', fecha_preseleccionada=fecha_evento)
+            return render_template('nuevo_evento.html', error='Longitud de nombre inválida (3-100)', fecha_preseleccionada=fecha_evento, referer=referer_form)
         if not validar_texto_seguro(nombre, 100, required=True):
             return render_template('nuevo_evento.html', 
                                  error='Nombre inválido o demasiado largo',
-                                 fecha_preseleccionada=fecha_evento)
+                                 fecha_preseleccionada=fecha_evento, referer=referer_form)
         # No permitir fecha anterior a hoy
         if not validar_fecha_no_pasada(fecha_evento):
             return render_template('nuevo_evento.html', 
                                  error='La fecha del evento no puede ser en el pasado',
-                                 fecha_preseleccionada=fecha_evento)
+                                 fecha_preseleccionada=fecha_evento, referer=referer_form)
+        
+        # Validar que la fecha y hora no sean del pasado
+        if hora_evento_raw and not validar_fecha_hora_no_pasada(fecha_evento, hora_evento):
+            return render_template('nuevo_evento.html', 
+                                 error='No se puede crear un evento con fecha y hora pasadas',
+                                 fecha_preseleccionada=fecha_evento, referer=referer_form)
 
         # Validar rango de horas si hay fin
         if hora_fin and not validar_rango_horas(hora_evento[:5], hora_fin[:5]):
-            return render_template('nuevo_evento.html', error='La hora fin debe ser posterior a la hora inicio', fecha_preseleccionada=fecha_evento)
+            return render_template('nuevo_evento.html', error='La hora fin debe ser posterior a la hora inicio', fecha_preseleccionada=fecha_evento, referer=referer_form)
 
         if fecha_fin and not validar_fecha_no_pasada(fecha_fin):
             return render_template('nuevo_evento.html', 
                                  error='La fecha fin no puede ser en el pasado',
-                                 fecha_preseleccionada=fecha_evento)
+                                 fecha_preseleccionada=fecha_evento, referer=referer_form)
 
         usuario_actual = session.get('usuario')
         user = obtener_usuario_por_nombre(usuario_actual)
@@ -327,15 +337,21 @@ def crear_evento_view():
                 hora_fin=hora_fin,
                 descripcion=descripcion or None
             )
-            return redirect(url_for('dashboard'))
+            # Redirigir según el origen
+            if referer_form == 'eventos':
+                return redirect(url_for('ver_eventos'))
+            elif referer_form == 'calendar':
+                return redirect(url_for('calendar'))
+            else:
+                return redirect(url_for('dashboard'))
         except ValueError as e:
             return render_template('nuevo_evento.html', 
                                  error=str(e),
-                                 fecha_preseleccionada=fecha_evento)
+                                 fecha_preseleccionada=fecha_evento, referer=referer_form)
 
     # Capturar fecha preseleccionada si viene desde FullCalendar
     fecha_preseleccionada = request.args.get('fecha', '')
-    return render_template('nuevo_evento.html', fecha_preseleccionada=fecha_preseleccionada)
+    return render_template('nuevo_evento.html', fecha_preseleccionada=fecha_preseleccionada, referer=referer)
 
 
 # Editar evento (página completa eliminada; se usa modal en UI)
@@ -398,26 +414,31 @@ def ver_tareas():
 @login_required
 def crear_tarea_view():
     """Crear nueva tarea desde formulario."""
+    # Capturar de dónde viene (referer)
+    referer = request.args.get('referer', 'dashboard')
+    
     if request.method == 'POST':
         # Sanitizar y extraer datos
         nombre = sanitizar_texto(request.form.get('nombre', ''))
         descripcion = sanitizar_texto(request.form.get('descripcion', ''))
         fecha_limite = request.form.get('fecha_limite', '').strip()
+        hora_evento = request.form.get('hora_evento', '').strip() or None
         prioridad = request.form.get('prioridad', '').strip()
+        referer_form = request.form.get('referer', 'dashboard')
 
         # Validaciones básicas
         if not validar_no_vacio(nombre):
-            return render_template('nueva_tarea.html', error='El nombre no puede estar vacío')
+            return render_template('nueva_tarea.html', error='El nombre no puede estar vacío', referer=referer_form)
         if not validar_longitud(nombre, 100, 3):
-            return render_template('nueva_tarea.html', error='Longitud de nombre inválida (3-100)')
+            return render_template('nueva_tarea.html', error='Longitud de nombre inválida (3-100)', referer=referer_form)
         if not validar_fecha_formato(fecha_limite):
-            return render_template('nueva_tarea.html', error='Fecha límite inválida')
+            return render_template('nueva_tarea.html', error='Fecha límite inválida', referer=referer_form)
         if not validar_fecha_no_pasada(fecha_limite):
-            return render_template('nueva_tarea.html', error='La fecha límite no puede ser pasada')
+            return render_template('nueva_tarea.html', error='La fecha límite no puede ser pasada', referer=referer_form)
         if not validar_prioridad(prioridad):
-            return render_template('nueva_tarea.html', error='Prioridad inválida (debe ser 1, 2 o 3)')
+            return render_template('nueva_tarea.html', error='Prioridad inválida (debe ser 1, 2 o 3)', referer=referer_form)
         if descripcion and not validar_longitud(descripcion, 500, 0):
-            return render_template('nueva_tarea.html', error='Descripción demasiado larga (máx 500)')
+            return render_template('nueva_tarea.html', error='Descripción demasiado larga (máx 500)', referer=referer_form)
 
         usuario_actual = session.get('usuario')
         user = obtener_usuario_por_nombre(usuario_actual)
@@ -430,13 +451,20 @@ def crear_tarea_view():
                 fecha_limite=fecha_limite,
                 prioridad=int(prioridad),
                 creador_id=creador_id,
-                estado=0  # Por defecto
+                estado=0,  # Por defecto
+                hora_evento=hora_evento
             )
-            return redirect(url_for('dashboard'))
+            # Redirigir según el origen
+            if referer_form == 'tareas':
+                return redirect(url_for('ver_tareas'))
+            elif referer_form == 'calendar':
+                return redirect(url_for('calendar'))
+            else:
+                return redirect(url_for('dashboard'))
         except ValueError as e:
-            return render_template('nueva_tarea.html', error=str(e))
+            return render_template('nueva_tarea.html', error=str(e), referer=referer_form)
 
-    return render_template('nueva_tarea.html')
+    return render_template('nueva_tarea.html', referer=referer)
 
 
 @app.route('/tareas/<int:id>/editar', methods=['GET', 'POST'])
@@ -496,21 +524,78 @@ def actualizar_estado_tarea_view(id):
 @app.route('/api/eventos')
 @login_required
 def api_eventos():
-    """Devuelve TODOS los eventos para FullCalendar en formato JSON.
+    """Devuelve eventos y tareas para FullCalendar.
 
-    Antes se filtraban únicamente los del día. Para el calendario completo
-    necesitamos todos para que FullCalendar pueda mostrarlos y permitir
-    arrastrar entre días sin que desaparezcan.
+    Ahora incluye también las tareas como pequeños puntos en la vista mensual
+    y con detalle normal en vistas de semana/día. Las tareas se distinguen por
+    la clase CSS `tarea-evento` y usan un prefijo en el ID para evitar colisiones.
     """
     usuario_actual = session.get('usuario')
     user = obtener_usuario_por_nombre(usuario_actual)
     usuario_id = user['id'] if user else None
+    # Optimización: usar rango solicitado por FullCalendar para limitar datos
+    start_param = request.args.get('start')  # formato ISO con timezone
+    end_param = request.args.get('end')
+    # Extraer solo la parte de fecha (YYYY-MM-DD)
+    def extraer_fecha(raw):
+        if not raw:
+            return None
+        return raw.split('T')[0][:10]
+    start_date = extraer_fecha(start_param)
+    end_date = extraer_fecha(end_param)
+
     eventos_data = obtener_eventos(usuario_id)
+    tareas_data = obtener_tareas(usuario_id)
+
+    # Filtrar por rango si ambos extremos son válidos
+    from utils import validar_fecha_formato
+    if start_date and end_date and validar_fecha_formato(start_date) and validar_fecha_formato(end_date):
+        try:
+            from datetime import datetime
+            sd = datetime.strptime(start_date, '%Y-%m-%d').date()
+            ed = datetime.strptime(end_date, '%Y-%m-%d').date()
+            eventos_data = [e for e in eventos_data if e.get('fecha_evento') and sd <= (e.get('fecha_evento') if not isinstance(e.get('fecha_evento'), str) else datetime.strptime(e.get('fecha_evento'), '%Y-%m-%d').date()) <= ed]
+            tareas_data = [t for t in tareas_data if t.get('fecha_limite') and sd <= (t.get('fecha_limite') if not isinstance(t.get('fecha_limite'), str) else datetime.strptime(t.get('fecha_limite'), '%Y-%m-%d').date()) <= ed]
+        except Exception:
+            pass
 
     eventos_json = []
     for e_data in eventos_data:
         evento = Evento(e_data)
         eventos_json.append(evento.to_fullcalendar())
+
+    # Añadir tareas al calendario
+    for t in tareas_data:
+        try:
+            fecha = t.get('fecha_limite') or t.get('fecha_evento')
+            if not fecha:
+                continue
+            
+            hora = t.get('hora_evento')
+            
+            # Si tiene hora, formatear como datetime; si no, marcar como allDay
+            if hora:
+                start_datetime = f"{fecha}T{hora}"
+                all_day = False
+            else:
+                start_datetime = fecha
+                all_day = True
+            
+            eventos_json.append({
+                'id': f"t-{t.get('id')}",
+                'title': t.get('nombre'),
+                'start': start_datetime,
+                'allDay': all_day,
+                'classNames': ['tarea-evento'],
+                'extendedProps': {
+                    'esTarea': True,
+                    'prioridad': t.get('prioridad'),
+                    'estado': t.get('estado'),
+                    'descripcion': t.get('descripcion') or ''
+                }
+            })
+        except Exception:
+            continue
 
     return jsonify(eventos_json)
 
@@ -557,6 +642,10 @@ def actualizar_evento_api(evento_id):
         return jsonify({"error": "Formato de fecha inválido"}), 400
     if not validar_fecha_no_pasada(fecha_inicio):
         return jsonify({"error": "Fecha de evento debe ser posterior a hoy"}), 400
+    
+    # Validar que la fecha y hora no sean del pasado
+    if hora_inicio_raw and not validar_fecha_hora_no_pasada(fecha_inicio, hora_inicio):
+        return jsonify({"error": "No se puede crear un evento con fecha y hora pasadas"}), 400
     
     # Validar formato sólo si la hora existe (siempre existirá tras normalización). Si se quiere permitir all-day sin hora,
     # se podría omitir esta validación cuando hora_inicio == '00:00' y fecha_fin/hora_fin son None.
@@ -650,6 +739,10 @@ def crear_evento_api():
     if not validar_fecha_no_pasada(fecha_evento):
         print("[DEBUG] Fecha pasada", fecha_evento)
         return jsonify({'error': 'Fecha debe ser hoy o futura'}), 400
+    # Validar que la fecha y hora no sean del pasado
+    if data.get('hora_evento') and not validar_fecha_hora_no_pasada(fecha_evento, hora_evento):
+        print("[DEBUG] Fecha y hora pasadas", fecha_evento, hora_evento)
+        return jsonify({'error': 'No se puede crear un evento con fecha y hora pasadas'}), 400
     if hora_evento and not validar_hora_formato(hora_evento):
         print("[DEBUG] Hora inválida", hora_evento)
         return jsonify({'error': 'Hora inválida'}), 400
@@ -724,8 +817,18 @@ def actualizar_tarea_api(tarea_id):
     nombre = sanitizar_texto(data.get('nombre', ''))
     descripcion = sanitizar_texto(data.get('descripcion', ''))
     fecha_limite = (data.get('fecha_evento') or data.get('fecha_limite') or '').strip()
+    hora_evento_raw = (data.get('hora_evento') or '').strip()
+    # Normalizar hora a HH:MM si viene con segundos HH:MM:SS
+    if hora_evento_raw and len(hora_evento_raw) == 8 and hora_evento_raw.count(':') == 2:
+        hora_evento = hora_evento_raw[:5]
+    else:
+        hora_evento = hora_evento_raw or None
     prioridad_raw = data.get('prioridad', 1)
     estado_raw = data.get('estado')
+
+    # Ajuste: si viene '00:00' desde un drag de un evento allDay y la tarea original NO tenía hora, lo tratamos como None
+    if hora_evento == '00:00' and not tarea.get('hora_evento'):
+        hora_evento = None
 
     # Validar nombre
     if not validar_no_vacio(nombre):
@@ -736,8 +839,9 @@ def actualizar_tarea_api(tarea_id):
     # Validar fecha
     if not validar_fecha_formato(fecha_limite):
         return jsonify({'error': 'Fecha límite inválida'}), 400
-    if not validar_fecha_no_pasada(fecha_limite):
-        return jsonify({'error': 'Fecha límite debe ser posterior a hoy'}), 400
+    # Relajamos la validación para permitir mover tareas a días pasados vía drag & drop
+    # (Se mantiene sólo el formato correcto y se deja decisión de negocio a otra capa si hiciera falta)
+
 
     # Validar prioridad
     try:
@@ -762,11 +866,16 @@ def actualizar_tarea_api(tarea_id):
     if descripcion and not validar_longitud(descripcion, 500, 0):
         return jsonify({'error': 'Descripción demasiado larga (máx 500)'}), 400
 
+    # DEBUG: Log de entrada
+    print(f"[DEBUG] PUT /api/tareas/{tarea_id} payload={{'nombre': '{nombre}', 'fecha_limite': '{fecha_limite}', 'hora_evento': '{hora_evento}', 'prioridad': {prioridad}, 'estado': {estado}}}")
     try:
-        modificar_tarea(tarea_id, nombre, descripcion or '', fecha_limite, prioridad, estado)
+        modificar_tarea(tarea_id, nombre, descripcion or '', fecha_limite, prioridad, estado, hora_evento)
+        print(f"[DEBUG] Tarea {tarea_id} modificada correctamente")
     except ValueError as e:
+        print(f"[DEBUG] ValueError modificando tarea {tarea_id}: {e}")
         return jsonify({'error': str(e)}), 400
     except Exception as e:
+        print(f"[DEBUG] Exception modificando tarea {tarea_id}: {e}")
         return jsonify({'error': 'Error interno'}), 500
 
     # Obtener tarea actualizada

@@ -53,7 +53,7 @@
 
         <!-- Botón Crear Nuevo -->
         <div class="px-4">
-            <a href="{{ url_for('crear_evento_view') }}"
+            <a href="{{ url_for('crear_evento_view', referer='eventos') }}"
                 class="inline-flex items-center justify-center rounded-lg px-4 py-2 bg-primary text-white hover:bg-primary/90 transition-colors">
                 <span class="material-symbols-outlined mr-2">add</span>
                 Crear nuevo evento

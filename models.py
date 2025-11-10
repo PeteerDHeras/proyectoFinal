@@ -96,6 +96,7 @@ class Tarea:
         self.nombre = data.get('nombre', '')
         self.descripcion = data.get('descripcion', '')
         self.fecha_limite = data.get('fecha_limite')
+        self.hora_evento = data.get('hora_evento')
         self.prioridad = data.get('prioridad', 1)
         estado_raw = data.get('estado', 0)
         try:
@@ -105,12 +106,29 @@ class Tarea:
         self.creador_id = data.get('creador_tarea')
         self.fecha_creacion = data.get('fecha_creacion')
 
+    def _normalizar_hora(self, hora_val):
+        """Normaliza diferentes tipos de hora a formato 'HH:MM'."""
+        if not hora_val:
+            return ''
+        if isinstance(hora_val, str):
+            return hora_val[:5]
+        if isinstance(hora_val, time):
+            return hora_val.strftime('%H:%M')
+        # Para timedelta
+        if hasattr(hora_val, 'total_seconds'):
+            total = int(hora_val.total_seconds())
+            hours = (total // 3600) % 24
+            minutes = (total % 3600) // 60
+            return f"{hours:02d}:{minutes:02d}"
+        return str(hora_val)[:5]
+
     def to_dict(self):
         return {
             'id': self.id,
             'nombre': self.nombre,
             'descripcion': self.descripcion,
             'fecha_limite': str(self.fecha_limite) if self.fecha_limite else '',
+            'hora_evento': self._normalizar_hora(self.hora_evento),
             'prioridad': int(self.prioridad) if str(self.prioridad).isdigit() else self.prioridad,
             'estado': self.estado,
             'estado_str': 'Completada' if self.estado == 1 else 'Pendiente',
@@ -129,7 +147,7 @@ class Tarea:
             'nombre': self.nombre,
             'descripcion': self.descripcion,
             'fecha_evento': str(self.fecha_limite) if self.fecha_limite else '',
-            'hora_evento': '',
+            'hora_evento': self._normalizar_hora(self.hora_evento),
             'fecha_fin': '',
             'hora_fin': '',
             'prioridad': self.prioridad,

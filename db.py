@@ -343,9 +343,9 @@ def obtener_eventos(usuario_id=None):
 # ----------- FUNCIONES PARA GESTIONAR TAREAS ------------------------ 
 
 # Modificar CREAR TAREA para incluir estado
-def crear_tarea(nombre, descripcion, fecha_limite, prioridad, creador_id, estado=0):
+def crear_tarea(nombre, descripcion, fecha_limite, prioridad, creador_id, estado=0, hora_evento=None):
     # VALIDAR DATOS ANTES DE CONECTAR
-    from utils import validar_texto_seguro, validar_fecha_formato, validar_id, validar_prioridad, validar_estado
+    from utils import validar_texto_seguro, validar_fecha_formato, validar_id, validar_prioridad, validar_estado, validar_hora_formato
     
     if not validar_texto_seguro(nombre, 100, required=True):
         raise ValueError("Nombre de tarea inválido")
@@ -365,15 +365,18 @@ def crear_tarea(nombre, descripcion, fecha_limite, prioridad, creador_id, estado
     if not validar_estado(estado):
         raise ValueError("Estado inválido (debe ser 0 o 1)")
     
+    if hora_evento and not validar_hora_formato(hora_evento):
+        raise ValueError("Hora inválida")
+    
     conn = get_connection()
     try:
         cursor = conn.cursor()
         # fecha_creacion ahora es TIMESTAMP con DEFAULT CURRENT_TIMESTAMP
         query = """
-            INSERT INTO tareas (nombre, descripcion, fecha_limite, prioridad, creador_tarea, estado)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO tareas (nombre, descripcion, fecha_limite, hora_evento, prioridad, creador_tarea, estado)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (nombre, descripcion, fecha_limite, prioridad, creador_id, estado))
+        cursor.execute(query, (nombre, descripcion, fecha_limite, hora_evento, prioridad, creador_id, estado))
         conn.commit()
         # Invalidar caché de tareas
         invalidate_cache('obtener_tareas')
@@ -384,9 +387,9 @@ def crear_tarea(nombre, descripcion, fecha_limite, prioridad, creador_id, estado
         conn.close()
 
 # Modificar MODIFICAR TAREA para incluir estado
-def modificar_tarea(tarea_id, nombre, descripcion, fecha_limite, prioridad, estado):
+def modificar_tarea(tarea_id, nombre, descripcion, fecha_limite, prioridad, estado, hora_evento=None):
     # VALIDAR DATOS ANTES DE CONECTAR
-    from utils import validar_texto_seguro, validar_fecha_formato, validar_id, validar_prioridad, validar_estado
+    from utils import validar_texto_seguro, validar_fecha_formato, validar_id, validar_prioridad, validar_estado, validar_hora_formato
     
     if not validar_id(tarea_id):
         raise ValueError("ID de tarea inválido")
@@ -406,15 +409,18 @@ def modificar_tarea(tarea_id, nombre, descripcion, fecha_limite, prioridad, esta
     if not validar_estado(estado):
         raise ValueError("Estado inválido (debe ser 0 o 1)")
     
+    if hora_evento and not validar_hora_formato(hora_evento):
+        raise ValueError("Hora inválida")
+    
     conn = get_connection()
     try:
         cursor = conn.cursor()
         query = """
             UPDATE tareas
-            SET nombre=%s, descripcion=%s, fecha_limite=%s, prioridad=%s, estado=%s
+            SET nombre=%s, descripcion=%s, fecha_limite=%s, hora_evento=%s, prioridad=%s, estado=%s
             WHERE id=%s
         """
-        cursor.execute(query, (nombre, descripcion, fecha_limite, prioridad, estado, tarea_id))
+        cursor.execute(query, (nombre, descripcion, fecha_limite, hora_evento, prioridad, estado, tarea_id))
         conn.commit()
         # Invalidar caché de tareas
         invalidate_cache('obtener_tareas')

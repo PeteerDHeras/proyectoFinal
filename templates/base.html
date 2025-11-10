@@ -52,19 +52,19 @@
                     <ul class="nav nav-pills flex-column">
                         <li class="nav-item mb-1">
                             <a href="{{ url_for('dashboard') }}" class="nav-link text-light sidebar-link">
-                                <i class="fa fa-chart-pie me-2" aria-hidden="true"></i>
+                                <span class="material-symbols-outlined me-2" style="font-size: 18px; vertical-align: middle;">dashboard</span>
                                 <span>Dashboard</span>
                             </a>
                         </li>
                         <li class="nav-item mb-1">
                             <a href="{{ url_for('calendar') }}" class="nav-link text-light sidebar-link">
-                                <i class="fa fa-calendar me-2" aria-hidden="true"></i>
+                                <span class="material-symbols-outlined me-2" style="font-size: 18px; vertical-align: middle;">calendar_month</span>
                                 <span>Calendario</span>
                             </a>
                         </li>
                         <li class="nav-item mb-1">
                             <a href="{{ url_for('ver_eventos') }}" class="nav-link text-light sidebar-link">
-                                <i class="fa fa-calendar-day me-2" aria-hidden="true"></i>
+                                <span class="material-symbols-outlined me-2" style="font-size: 18px; vertical-align: middle;">event</span>
                                 <span>Eventos</span>
                             </a>
                         </li>
@@ -77,10 +77,19 @@
                         <!-- Iniciar/Cerrar sesión -->
                         <li class="nav-item mt-3">
                             {% if session.get('usuario') %}
-                            <a href="{{ url_for('logout') }}" class="btn btn-outline-light w-100 mb-2">Cerrar sesión</a>
+                            <a href="{{ url_for('logout') }}" class="btn btn-outline-light w-100 mb-2">
+                                <span class="material-symbols-outlined me-1" style="font-size: 18px; vertical-align: middle;">logout</span>
+                                Cerrar sesión
+                            </a>
                             {% else %}
-                            <a href="{{ url_for('login') }}" class="btn btn-outline-light w-100 mb-2">Iniciar sesión</a>
-                            <a href="{{ url_for('register') }}" class="btn w-100" style="background: linear-gradient(to right, rgb(168, 85, 247), rgb(219, 39, 119)); color: white; border: none;">Registrarse</a>
+                            <a href="{{ url_for('login') }}" class="btn btn-outline-light w-100 mb-2">
+                                <span class="material-symbols-outlined me-1" style="font-size: 18px; vertical-align: middle;">login</span>
+                                Iniciar sesión
+                            </a>
+                            <a href="{{ url_for('register') }}" class="btn w-100" style="background: linear-gradient(to right, rgb(168, 85, 247), rgb(219, 39, 119)); color: white; border: none;">
+                                <span class="material-symbols-outlined me-1" style="font-size: 18px; vertical-align: middle;">person_add</span>
+                                Registrarse
+                            </a>
                             {% endif %}
                         </li>
                     </ul>
@@ -92,21 +101,17 @@
         <!-- Añadido padding superior e inferior para separar el contenido del borde superior
              sin afectar al sidebar. Usamos clases responsive para un término medio en móvil y
              más aire en pantallas grandes. -->
-        <main class="flex-grow-1 bg-background-light pt-6 pb-5 px-3 px-md-4 pt-md-8">
+        <main class="flex-grow-1 bg-background-light pt-6 pb-5 px-3 px-md-4 pt-md-8" style="min-height:100vh;">
             {% block content %}{% endblock %}
-            <div class="row mt-3">
-                <div class="col-12">
-                    <!-- Footer -->
-                    <footer class="d-flex justify-content-between align-items-center small text-muted border-top pt-3">
-                        <div class="m-6 pl-8">MyPlanner • Versión 1.4</div>
-                        <div>Todos los derechos reservados © 2025 - Pedro de las Heras</div>
-                        <div  class="m-6 pr-8">
-                            <a href="{{ url_for('ayuda') }}" class="text-muted me-3">Ayuda</a>
-                            <a href="{{ url_for('contacto') }}" class="text-muted p-8">Contacto</a>
-                        </div>
-                    </footer>
+            <!-- Footer fijo global -->
+            <footer class="site-footer d-flex justify-content-between align-items-center small text-muted border-top py-2 px-4">
+                <div>MyPlanner • Versión 1.4</div>
+                <div>Todos los derechos reservados © 2025 Pedro de las Heras</div>
+                <div>
+                    <a href="{{ url_for('ayuda') }}" class="text-muted me-3">Ayuda</a>
+                    <a href="{{ url_for('contacto') }}" class="text-muted">Contacto</a>
                 </div>
-            </div>
+            </footer>
         </main>
     </div>
 
@@ -147,6 +152,10 @@
                     closeSidebar();
                 }
             }
+        });
+        // Asegurar misma fuente y peso activo en enlaces
+        document.querySelectorAll('.sidebar-link').forEach(function(link){
+            link.style.fontWeight = '500';
         });
     });
     </script>
