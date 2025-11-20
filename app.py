@@ -31,6 +31,13 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'clave_secreta_segura')
 
+# Filtro Jinja para mostrar el usuario con primera letra mayúscula sin alterar el resto
+@app.template_filter('capitalizar_primera')
+def capitalizar_primera(valor):
+    if not isinstance(valor, str) or not valor:
+        return ''
+    return valor[0].upper() + valor[1:]
+
 # Limpieza automática SOLO en desarrollo (cuando debug=True)
 # En producción usa el endpoint /admin/limpiar-datos o un cron job externo
 if os.getenv('FLASK_ENV', 'development') == 'development':
@@ -98,14 +105,17 @@ def login():
         usuario = sanitizar_texto(request.form.get('usuario', ''))
         password = request.form.get('password', '')
         # Validaciones básicas login
+        errors = []
         if not validar_no_vacio(usuario) or not validar_no_vacio(password):
-            return render_template('login.html', error='Usuario y contraseña requeridos')
+            errors.append('Usuario y contraseña requeridos')
         if not validar_longitud(usuario, 50, 3):
-            return render_template('login.html', error='Usuario debe tener entre 3 y 50 caracteres')
+            errors.append('Usuario debe tener entre 3 y 50 caracteres')
+        if errors:
+            return render_template('login.html', errors=errors)
         if verificar_usuario(usuario, password):
             session['usuario'] = usuario
             return redirect(url_for('dashboard'))
-        return render_template('login.html', error='Credenciales inválidas')
+        return render_template('login.html', errors=['Credenciales inválidas'])
     return render_template('login.html')
 
 
@@ -133,28 +143,31 @@ def register():
         patron_password = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$'
 
         # Validaciones básicas
+        errors = []
         if not validar_no_vacio(usuario) or not validar_no_vacio(password):
-            return render_template('register.html', error='Usuario y contraseña son obligatorios')
+            errors.append('Usuario y contraseña son obligatorios')
         if not validar_longitud(usuario, 50, 3):
-            return render_template('register.html', error='El usuario debe tener entre 3 y 50 caracteres')
+            errors.append('El usuario debe tener entre 3 y 50 caracteres')
         if not re.match(r'^[a-zA-Z0-9]+$', usuario):
-            return render_template('register.html', error='El usuario solo puede contener letras y números')
+            errors.append('El usuario solo puede contener letras y números')
         if usuario != 'admin' and not re.match(patron_password, password):
-            return render_template('register.html', error='La contraseña debe tener mínimo 8 caracteres, incluir mayúscula, minúscula y número')
+            errors.append('La contraseña debe tener mínimo 8 caracteres, incluir mayúscula, minúscula y número')
         if password != confirm:
-            return render_template('register.html', error='Las contraseñas no coinciden')
+            errors.append('Las contraseñas no coinciden')
+        if errors:
+            return render_template('register.html', errors=errors)
 
         # Usuario existente
         existente = obtener_usuario_por_nombre(usuario)
         if existente:
-            return render_template('register.html', error='El usuario ya existe')
+            return render_template('register.html', errors=['El usuario ya existe'])
 
         try:
             registrar_usuario(usuario, password, 1)
         except ValueError as e:
-            return render_template('register.html', error=str(e))
+            return render_template('register.html', errors=[str(e)])
         except Exception:
-            return render_template('register.html', error='Error interno registrando usuario')
+            return render_template('register.html', errors=['Error interno registrando usuario'])
 
         flash('Registro exitoso. Ahora puedes iniciar sesión', 'success')
         return redirect(url_for('login'))
@@ -294,34 +307,23 @@ def crear_evento_view():
         referer_form = request.form.get('referer', 'dashboard')
 
         # Validar no vacío y longitud
+        errors = []
         if not validar_no_vacio(nombre):
-            return render_template('nuevo_evento.html', error='El nombre no puede estar vacío', fecha_preseleccionada=fecha_evento, referer=referer_form)
+            errors.append('El nombre no puede estar vacío')
         if not validar_longitud(nombre, 100, 3):
-            return render_template('nuevo_evento.html', error='Longitud de nombre inválida (3-100)', fecha_preseleccionada=fecha_evento, referer=referer_form)
+            errors.append('Longitud de nombre inválida (3-100)')
         if not validar_texto_seguro(nombre, 100, required=True):
-            return render_template('nuevo_evento.html', 
-                                 error='Nombre inválido o demasiado largo',
-                                 fecha_preseleccionada=fecha_evento, referer=referer_form)
-        # No permitir fecha anterior a hoy
+            errors.append('Nombre inválido o demasiado largo')
         if not validar_fecha_no_pasada(fecha_evento):
-            return render_template('nuevo_evento.html', 
-                                 error='La fecha del evento no puede ser en el pasado',
-                                 fecha_preseleccionada=fecha_evento, referer=referer_form)
-        
-        # Validar que la fecha y hora no sean del pasado
+            errors.append('La fecha del evento no puede ser en el pasado')
         if hora_evento_raw and not validar_fecha_hora_no_pasada(fecha_evento, hora_evento):
-            return render_template('nuevo_evento.html', 
-                                 error='No se puede crear un evento con fecha y hora pasadas',
-                                 fecha_preseleccionada=fecha_evento, referer=referer_form)
-
-        # Validar rango de horas si hay fin
+            errors.append('No se puede crear un evento con fecha y hora pasadas')
         if hora_fin and not validar_rango_horas(hora_evento[:5], hora_fin[:5]):
-            return render_template('nuevo_evento.html', error='La hora fin debe ser posterior a la hora inicio', fecha_preseleccionada=fecha_evento, referer=referer_form)
-
+            errors.append('La hora fin debe ser posterior a la hora inicio')
         if fecha_fin and not validar_fecha_no_pasada(fecha_fin):
-            return render_template('nuevo_evento.html', 
-                                 error='La fecha fin no puede ser en el pasado',
-                                 fecha_preseleccionada=fecha_evento, referer=referer_form)
+            errors.append('La fecha fin no puede ser en el pasado')
+        if errors:
+            return render_template('nuevo_evento.html', errors=errors, fecha_preseleccionada=fecha_evento, referer=referer_form)
 
         usuario_actual = session.get('usuario')
         user = obtener_usuario_por_nombre(usuario_actual)
@@ -345,9 +347,7 @@ def crear_evento_view():
             else:
                 return redirect(url_for('dashboard'))
         except ValueError as e:
-            return render_template('nuevo_evento.html', 
-                                 error=str(e),
-                                 fecha_preseleccionada=fecha_evento, referer=referer_form)
+            return render_template('nuevo_evento.html', errors=[str(e)], fecha_preseleccionada=fecha_evento, referer=referer_form)
 
     # Capturar fecha preseleccionada si viene desde FullCalendar
     fecha_preseleccionada = request.args.get('fecha', '')
@@ -427,18 +427,21 @@ def crear_tarea_view():
         referer_form = request.form.get('referer', 'dashboard')
 
         # Validaciones básicas
+        errors = []
         if not validar_no_vacio(nombre):
-            return render_template('nueva_tarea.html', error='El nombre no puede estar vacío', referer=referer_form)
+            errors.append('El nombre no puede estar vacío')
         if not validar_longitud(nombre, 100, 3):
-            return render_template('nueva_tarea.html', error='Longitud de nombre inválida (3-100)', referer=referer_form)
+            errors.append('Longitud de nombre inválida (3-100)')
         if not validar_fecha_formato(fecha_limite):
-            return render_template('nueva_tarea.html', error='Fecha límite inválida', referer=referer_form)
+            errors.append('Fecha límite inválida')
         if not validar_fecha_no_pasada(fecha_limite):
-            return render_template('nueva_tarea.html', error='La fecha límite no puede ser pasada', referer=referer_form)
+            errors.append('La fecha límite no puede ser pasada')
         if not validar_prioridad(prioridad):
-            return render_template('nueva_tarea.html', error='Prioridad inválida (debe ser 1, 2 o 3)', referer=referer_form)
+            errors.append('Prioridad inválida (debe ser 1, 2 o 3)')
         if descripcion and not validar_longitud(descripcion, 500, 0):
-            return render_template('nueva_tarea.html', error='Descripción demasiado larga (máx 500)', referer=referer_form)
+            errors.append('Descripción demasiado larga (máx 500)')
+        if errors:
+            return render_template('nueva_tarea.html', errors=errors, referer=referer_form)
 
         usuario_actual = session.get('usuario')
         user = obtener_usuario_por_nombre(usuario_actual)
@@ -462,7 +465,7 @@ def crear_tarea_view():
             else:
                 return redirect(url_for('dashboard'))
         except ValueError as e:
-            return render_template('nueva_tarea.html', error=str(e), referer=referer_form)
+            return render_template('nueva_tarea.html', errors=[str(e)], referer=referer_form)
 
     return render_template('nueva_tarea.html', referer=referer)
 

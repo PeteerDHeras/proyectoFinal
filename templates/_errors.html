@@ -1,0 +1,12 @@
+{% if errors and errors|length > 0 %}
+<div class="space-y-2 mb-6">
+  {% for e in errors %}
+  <div class="bg-red-50 border-l-4 border-red-500 p-3 rounded-r-lg shadow-sm">
+    <div class="flex items-center">
+      <span class="material-symbols-outlined text-red-500 mr-2 text-sm">error</span>
+      <p class="text-red-800 text-xs md:text-sm font-medium">{{ e }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}

@@ -13,15 +13,8 @@
       <p class="text-gray-600 text-sm mt-2">Añade una nueva tarea a tu lista de pendientes</p>
     </div>
 
-    <!-- Error Alert -->
-    {% if error %}
-    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm mb-6">
-      <div class="flex items-center">
-        <span class="material-symbols-outlined text-red-500 mr-3">error</span>
-        <p class="text-red-800 text-sm font-medium">{{ error }}</p>
-      </div>
-    </div>
-    {% endif %}
+    <!-- Errores -->
+    {% include '_errors.html' %}
 
     <!-- Form Card -->
     <div class="bg-white rounded-2xl shadow-2xl p-8">

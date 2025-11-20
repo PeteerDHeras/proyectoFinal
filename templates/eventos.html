@@ -32,6 +32,26 @@
     body {
         font-family: 'Inter', sans-serif;
     }
+    /* Header de cada tarjeta de evento: fondo más oscuro/grisáceo para mejor legibilidad */
+    .evento-header {
+        background-image: linear-gradient(to bottom right,
+            rgba(45,45,55,0.85),
+            rgba(70,70,80,0.88),
+            rgba(95,95,110,0.9)
+        ), url('{{ url_for('static', filename='img/evento_bg.svg') }}');
+        background-size: cover;
+        background-position: center;
+    }
+    .evento-header h3 { text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+    .evento-header .material-symbols-outlined { text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+    /* Bloque fecha/hora mejorado */
+    .evento-meta { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.25rem; }
+    .evento-meta-item { display:flex; align-items:center; gap:.35rem; padding:.45rem .6rem; border-radius:.6rem; background:linear-gradient(135deg, #2d2f33 0%, #3a3d44 50%, #4a4f58 100%); color:#fff; font-size:.70rem; line-height:1; position:relative; box-shadow:0 2px 4px rgba(0,0,0,.35); }
+    .evento-meta-item .material-symbols-outlined { font-size:16px; opacity:.9; }
+    .evento-meta-item .label { text-transform:uppercase; font-weight:600; letter-spacing:.5px; font-size:.60rem; opacity:.75; }
+    .evento-meta-item .value { font-weight:600; font-size:.80rem; letter-spacing:.3px; }
+    @media (min-width:640px){ .evento-meta-item { font-size:.75rem; } .evento-meta-item .value { font-size:.85rem; } }
+    @media (prefers-color-scheme: dark){ .evento-meta-item { background:linear-gradient(135deg,#3a3d44,#50555f); } }
 </style>
 
 <main class="flex-1 p-8 bg-background-light text-text-light">
@@ -66,10 +86,10 @@
             <!-- Tarjeta de Evento Compacta -->
             <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-200">
                 
-                <!-- Header con gradiente y título -->
-                <div class="relative bg-gradient-to-br from-blue-700 via-indigo-700 to-purple-800 p-4 h-24 flex items-end">
+                <!-- Header con imagen + gradiente grisáceo oscuro para alta legibilidad -->
+                <div class="evento-header relative p-4 h-24 flex items-end bg-no-repeat bg-center bg-cover">
                     <div class="absolute top-2 right-2">
-                        <span class="material-symbols-outlined text-white text-2xl opacity-20">event</span>
+                        <span class="material-symbols-outlined text-white text-2xl opacity-25">event</span>
                     </div>
                     <h3 class="text-white font-bold text-base leading-tight line-clamp-2">{{ evento.nombre }}</h3>
                 </div>
@@ -83,15 +103,16 @@
                     <p class="text-gray-400 text-xs italic h-8">Sin descripción</p>
                     {% endif %}
                     
-                    <!-- Fecha y Hora compactas -->
-                    <div class="flex items-center justify-between text-xs bg-gray-50 rounded-lg p-2">
-                        <div class="flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-blue-600" style="font-size: 16px;">calendar_today</span>
-                            <span class="text-gray-700 font-medium">{{ evento.fecha_evento }}</span>
+                    <!-- Fecha y Hora destacadas -->
+                    <div class="evento-meta">
+                        <div class="evento-meta-item">
+                            <span class="material-symbols-outlined">calendar_today</span>
+                            <span class="value">{{ evento.fecha_evento }}</span>
+                            <span class="label">Fecha</span>
                         </div>
-                        <div class="flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-indigo-600" style="font-size: 16px;">schedule</span>
-                            <span class="text-gray-700 font-medium">
+                        <div class="evento-meta-item">
+                            <span class="material-symbols-outlined">schedule</span>
+                            <span class="value">
                                 {%- set _hora = evento.hora_evento|string -%}
                                 {%- if _hora -%}
                                     {{ _hora.split(':')[:2]|join(':') }}
@@ -99,6 +120,7 @@
                                     --:--
                                 {%- endif -%}
                             </span>
+                            <span class="label">Hora</span>
                         </div>
                     </div>
                     

@@ -19,14 +19,7 @@
         </div>
 
         <!-- Errores -->
-        {% if error %}
-        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm">
-            <div class="flex items-center">
-                <span class="material-symbols-outlined text-red-500 mr-3">error</span>
-                <p class="text-red-800 text-sm font-medium">{{ error }}</p>
-            </div>
-        </div>
-        {% endif %}
+        {% include '_errors.html' %}
 
         <!-- Formulario -->
         <div class="bg-white rounded-2xl shadow-2xl p-8 space-y-6">
@@ -68,9 +61,17 @@
                             type="password" 
                             name="password" 
                             placeholder="Crea una contraseña segura"
-                            class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200 text-gray-900 placeholder-gray-400"
+                            class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200 text-gray-900 placeholder-gray-400"
                             required
                         >
+                        <button 
+                            type="button"
+                            onclick="togglePassword('password', 'password-eye')"
+                            class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition focus:outline-none border-0 bg-transparent cursor-pointer"
+                            style="outline: none !important; box-shadow: none !important;"
+                        >
+                            <span id="password-eye" class="material-symbols-outlined text-xl">visibility</span>
+                        </button>
                     </div>
                     <div class="bg-blue-50 rounded-lg p-3 mt-2">
                         <p class="text-xs text-blue-800 font-medium mb-1">Requisitos de contraseña:</p>
@@ -109,9 +110,17 @@
                             type="password" 
                             name="confirm" 
                             placeholder="Repite tu contraseña"
-                            class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200 text-gray-900 placeholder-gray-400"
+                            class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200 text-gray-900 placeholder-gray-400"
                             required
                         >
+                        <button 
+                            type="button"
+                            onclick="togglePassword('confirm', 'confirm-eye')"
+                            class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition focus:outline-none border-0 bg-transparent cursor-pointer"
+                            style="outline: none !important; box-shadow: none !important;"
+                        >
+                            <span id="confirm-eye" class="material-symbols-outlined text-xl">visibility</span>
+                        </button>
                     </div>
                 </div>
 
@@ -151,4 +160,19 @@
         </p>
     </div>
 </div>
+
+<script>
+function togglePassword(inputId, eyeId) {
+    const input = document.getElementById(inputId);
+    const eye = document.getElementById(eyeId);
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        eye.textContent = 'visibility_off';
+    } else {
+        input.type = 'password';
+        eye.textContent = 'visibility';
+    }
+}
+</script>
 {% endblock %}

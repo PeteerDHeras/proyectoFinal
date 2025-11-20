@@ -45,8 +45,9 @@
                     <div class="rounded-circle"
                         style="width:48px; height:48px; background-size:cover; background-position:center; background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC8w4gQAUyg__Pz5qUJG_E3XTetshO4_YIKFMqQKyOOBlh6o2nVxUlpwcK8JyDMCcUF8NneXp_NFdOXFCTSluwSVi96yPDxjCr4_bA9NhMlxZ6IECv90ys-HxLlB4GqnZAtAG6HUOagtP9ZaHHUOSQokZLtU3FRXAdnI79j-54cE77VNZT2B_vlkf9VOlCVX2nAxdiIjDDpe2LlA52k_A3GnIB5zIhg6KPjO6tcx0bMZclABUUuDnlL5g-EF9gjDyOI9VX7wzjF-pk');">
                     </div>
-                    <h1 class="h6 mb-0"><strong>{{ session['usuario'] }}</strong></h1>
+                    <h1 class="h6 mb-0"><strong>{{ session['usuario']|capitalizar_primera }}</strong></h1>
                 </div>
+
                 <!-- Navbar Links -->
                 <nav aria-label="Main navigation">
                     <ul class="nav nav-pills flex-column">
@@ -93,6 +94,20 @@
                             {% endif %}
                         </li>
                     </ul>
+                    <!-- Calendario de referencia -->
+                <div class="mini-calendar bg-dark border rounded p-2 mb-3 mt-5" style="border-color: #495057 !important;">
+                    <div class="d-flex justify-content-between align-items-center mb-2 p-2">
+                            <button onclick="changeMonth(-1)" class="btn btn-sm btn-link text-light p-0" style="text-decoration: none;">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">chevron_left</span>
+                            </button>
+                            <div id="calendarMonth" class="text-light fw-semibold" style="font-size: 0.85rem;"></div>
+                            <button onclick="changeMonth(1)" class="btn btn-sm btn-link text-light p-0" style="text-decoration: none;">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">chevron_right</span>
+                            </button>
+                        </div>
+                        <div id="calendarDays" class="d-grid gap-1" style="grid-template-columns: repeat(7, 1fr); font-size: 0.7rem;">
+                        </div>
+                    </div>
                 </nav>
             </div>
         </aside>
@@ -101,18 +116,36 @@
         <!-- Añadido padding superior e inferior para separar el contenido del borde superior
              sin afectar al sidebar. Usamos clases responsive para un término medio en móvil y
              más aire en pantallas grandes. -->
-        <main class="flex-grow-1 bg-background-light pt-6 pb-5 px-3 px-md-4 pt-md-8" style="min-height:100vh;">
-            {% block content %}{% endblock %}
-            <!-- Footer fijo global -->
-            <footer class="site-footer d-flex justify-content-between align-items-center small text-muted border-top py-2 px-4">
-                <div>MyPlanner • Versión 1.4</div>
-                <div>Todos los derechos reservados © 2025 Pedro de las Heras</div>
-                <div>
-                    <a href="{{ url_for('ayuda') }}" class="text-muted me-3">Ayuda</a>
+        <main class="flex-grow-1 bg-background-light pt-6 pb-5 px-3 px-md-4 pt-md-8 d-flex flex-column" style="min-height:100vh; position: relative;">
+            <div class="flex-grow-1">
+                {% block content %}{% endblock %}
+            </div>
+            <!-- Footer responsive: fijo en pantallas grandes, normal en medianas/pequeñas -->
+            <footer class="site-footer d-flex flex-column flex-md-row justify-content-between align-items-center small text-muted border-top py-2 px-3 mt-auto" style="gap: 0.5rem;">
+                <div style="font-size: 0.75rem;">MyPlanner • v1.4</div>
+                <div class="d-none d-lg-block" style="font-size: 0.75rem;">© 2025 Pedro de las Heras</div>
+                <div style="font-size: 0.75rem;">
+                    <a href="{{ url_for('ayuda') }}" class="text-muted me-2">Ayuda</a>
                     <a href="{{ url_for('contacto') }}" class="text-muted">Contacto</a>
                 </div>
             </footer>
         </main>
+
+        <style>
+            @media (min-width: 992px) {
+                .site-footer {
+                    position: fixed;
+                    bottom: 0;
+                    right: 0;
+                    left: 16rem;
+                    z-index: 100;
+                    background-color: #f8f9fa;
+                }
+                main {
+                    padding-bottom: 60px !important;
+                }
+            }
+        </style>
     </div>
 
     <script>
@@ -157,6 +190,55 @@
         document.querySelectorAll('.sidebar-link').forEach(function(link){
             link.style.fontWeight = '500';
         });
+
+        // Mini calendario
+        let currentDate = new Date();
+        
+        function renderCalendar() {
+            const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                              'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const dayNames = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+            
+            const month = currentDate.getMonth();
+            const year = currentDate.getFullYear();
+            const today = new Date();
+            
+            document.getElementById('calendarMonth').textContent = monthNames[month] + ' ' + year;
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            let html = '';
+            
+            // Nombres de días
+            dayNames.forEach(day => {
+                html += `<div class="text-center text-muted fw-semibold" style="font-size: 0.65rem;">${day}</div>`;
+            });
+            
+            // Espacios vacíos antes del primer día
+            for (let i = 0; i < firstDay; i++) {
+                html += '<div></div>';
+            }
+            
+            // Días del mes
+            for (let day = 1; day <= daysInMonth; day++) {
+                const isToday = day === today.getDate() && 
+                               month === today.getMonth() && 
+                               year === today.getFullYear();
+                
+                const classes = isToday ? 'bg-primary text-white rounded-circle' : 'text-light';
+                html += `<div class="text-center ${classes}" style="padding: 2px; aspect-ratio: 1;">${day}</div>`;
+            }
+            
+            document.getElementById('calendarDays').innerHTML = html;
+        }
+        
+        window.changeMonth = function(delta) {
+            currentDate.setMonth(currentDate.getMonth() + delta);
+            renderCalendar();
+        };
+        
+        renderCalendar();
     });
     </script>
 
