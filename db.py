@@ -200,16 +200,21 @@ def verificar_usuario(nombre, contraseña):
 
 # Obtener usuario por nombre
 def obtener_usuario_por_nombre(nombre):
-    # VALIDAR ANTES DE CONECTAR
+    """Recupera un usuario por nombre incluyendo su hash de contraseña.
+
+    Se usa en procesos que requieren verificación de contraseña (cambio de nombre,
+    cambio de password, login ya tiene verificación propia). Devuelve None si el
+    nombre no pasa validación o no existe.
+    """
     if not nombre or not validar_input_texto(nombre, 50):
         return None
-    
+
     conn = get_connection()
     try:
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT id, usuario, rol FROM usuario WHERE usuario = %s", (nombre,))
-        usuario = cursor.fetchone()
-        return usuario
+        # Incluir password para operaciones que necesitan verificación
+        cursor.execute("SELECT id, usuario, rol, password FROM usuario WHERE usuario = %s", (nombre,))
+        return cursor.fetchone()
     except Exception:
         return None
     finally:

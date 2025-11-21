@@ -1141,7 +1141,11 @@ def cambiar_nombre_usuario():
             errors.append('La contraseña actual es incorrecta')
     
     if errors:
-        return render_template('ajustes_usuario.html', errors=errors)
+        # Reconstruir contexto admin si aplica
+        user = obtener_usuario_por_nombre(usuario_actual)
+        es_admin = user and user.get('rol', 1) == 3
+        admin_data = _build_admin_data() if es_admin else {}
+        return render_template('ajustes_usuario.html', errors=errors, es_admin=es_admin, admin_data=admin_data)
     
     # Actualizar el nombre de usuario
     try:
@@ -1157,6 +1161,14 @@ def cambiar_nombre_usuario():
         
         # Actualizar la sesión
         session['usuario'] = nuevo_nombre
+        # Mantener sesión activa moviendo el token al nuevo nombre
+        token = session.get('session_token')
+        if token:
+            ACTIVE_USER_SESSIONS.pop(usuario_actual, None)
+            ACTIVE_USER_SESSIONS[nuevo_nombre] = {
+                'token': token,
+                'last_active': datetime.utcnow()
+            }
         # Re-armar contexto ajustes
         es_admin = user and user.get('rol', 1) == 3
         admin_data = _build_admin_data() if es_admin else {}
@@ -1201,7 +1213,9 @@ def cambiar_password():
             errors.append('La contraseña actual es incorrecta')
     
     if errors:
-        return render_template('ajustes_usuario.html', errors=errors)
+        es_admin = user and user.get('rol', 1) == 3
+        admin_data = _build_admin_data() if es_admin else {}
+        return render_template('ajustes_usuario.html', errors=errors, es_admin=es_admin, admin_data=admin_data)
     
     # Actualizar la contraseña
     try:
