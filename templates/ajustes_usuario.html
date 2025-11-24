@@ -27,19 +27,19 @@
     {% endif %}
 
     <!-- Información actual del usuario -->
-    <div class="bg-white rounded-2xl shadow-2xl p-8 mb-6">
-      <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+    <div class="bg-white rounded-2xl shadow-2xl p-4 sm:p-8 mb-6">
+      <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
         <span class="material-symbols-outlined">person</span>
         <span>Información de la cuenta</span>
       </h3>
-      <div class="bg-gray-50 rounded-lg p-4">
-        <p class="text-gray-700"><strong>Usuario actual:</strong> {{ session.get('usuario') }}</p>
+      <div class="bg-gray-50 rounded-lg p-3 sm:p-4">
+        <p class="text-sm sm:text-base text-gray-700"><strong>Usuario actual:</strong> {{ session.get('usuario') }}</p>
       </div>
     </div>
 
     <!-- Cambiar nombre de usuario -->
-    <div class="bg-white rounded-2xl shadow-2xl p-8 mb-6">
-      <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+    <div class="bg-white rounded-2xl shadow-2xl p-4 sm:p-8 mb-6">
+      <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
         <span class="material-symbols-outlined">edit</span>
         <span>Cambiar nombre de usuario</span>
       </h3>
@@ -81,8 +81,8 @@
     </div>
 
     <!-- Cambiar contraseña -->
-    <div class="bg-white rounded-2xl shadow-2xl p-8 mb-6">
-      <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+    <div class="bg-white rounded-2xl shadow-2xl p-4 sm:p-8 mb-6">
+      <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
         <span class="material-symbols-outlined">lock</span>
         <span>Cambiar contraseña</span>
       </h3>
@@ -138,19 +138,25 @@
 
     <!-- SECCIÓN ADMIN: Solo visible si es_admin -->
     {% if es_admin %}
-    <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-2xl p-8 mb-6 border-2 border-purple-200">
-      <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-        <span class="material-symbols-outlined text-purple-600 text-3xl">admin_panel_settings</span>
+    <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-2xl p-4 sm:p-8 mb-6 border-2 border-purple-200">
+      <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+        <span class="material-symbols-outlined text-purple-600 text-2xl sm:text-3xl">admin_panel_settings</span>
         <span>Panel de Administración</span>
       </h2>
 
       <!-- Tabs de admin -->
-      <div class="border-b border-gray-300 mb-6">
-        <nav class="-mb-px flex space-x-4">
-          <button onclick="showAdminTab('usuarios')" id="admin-tab-usuarios" class="admin-tab-btn border-b-2 border-purple-500 text-purple-600 py-3 px-1 font-medium text-sm">
+      <div class="border-b border-gray-300 mb-6 overflow-x-auto">
+        <nav class="-mb-px flex space-x-2 sm:space-x-4 min-w-max">
+          <button onclick="showAdminTab('usuarios')" id="admin-tab-usuarios" class="admin-tab-btn border-b-2 border-purple-500 text-purple-600 py-3 px-1 font-medium text-xs sm:text-sm whitespace-nowrap">
             <span class="flex items-center gap-2">
               <span class="material-symbols-outlined text-base">group</span>
               Usuarios
+            </span>
+          </button>
+          <button onclick="showAdminTab('sesiones')" id="admin-tab-sesiones" class="admin-tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-3 px-1 font-medium text-sm">
+            <span class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-base">monitor_heart</span>
+              Sesiones
             </span>
           </button>
           <button onclick="showAdminTab('eventos')" id="admin-tab-eventos" class="admin-tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-3 px-1 font-medium text-sm">
@@ -211,6 +217,55 @@
                   {% endif %}
                 </td>
               </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Panel: Sesiones Activas -->
+      <div id="admin-panel-sesiones" class="admin-tab-content hidden">
+        <div class="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded text-sm">
+          <p class="text-blue-800 font-medium">ℹ️ Sesiones activas en el servidor (expiran tras 30 min de inactividad)</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-100">
+              <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-600">Usuario</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-600">Última Actividad</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-600">Inactivo (min)</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-600">Token</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-600">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              {% for s in admin_data.sesiones_activas %}
+              <tr>
+                <td class="px-4 py-2 font-medium text-gray-900">{{ s.usuario }}</td>
+                <td class="px-4 py-2 text-gray-600 text-xs">{{ s.last_active }}</td>
+                <td class="px-4 py-2">
+                  {% if s.inactive_minutes < 5 %}
+                  <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">{{ s.inactive_minutes }} min</span>
+                  {% elif s.inactive_minutes < 15 %}
+                  <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">{{ s.inactive_minutes }} min</span>
+                  {% else %}
+                  <span class="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">{{ s.inactive_minutes }} min</span>
+                  {% endif %}
+                </td>
+                <td class="px-4 py-2 text-gray-500 text-xs font-mono">{{ s.token_preview }}</td>
+                <td class="px-4 py-2">
+                  <form method="POST" action="{{ url_for('cerrar_sesion_usuario_admin') }}" class="inline" onsubmit="return confirm('¿Cerrar sesión de {{ s.usuario }}?')">
+                    <input type="hidden" name="usuario" value="{{ s.usuario }}">
+                    <button type="submit" class="text-red-600 hover:text-red-900 flex items-center gap-1 text-xs">
+                      <span class="material-symbols-outlined text-sm">logout</span>
+                      <span>Cerrar</span>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="5" class="px-4 py-3 text-center text-gray-500">No hay sesiones activas</td></tr>
               {% endfor %}
             </tbody>
           </table>

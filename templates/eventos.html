@@ -44,15 +44,45 @@
     }
     .evento-header h3 { text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
     .evento-header .material-symbols-outlined { text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
-    /* Bloque fecha/hora mejorado */
-    .evento-meta { display:flex; gap:.5rem; flex-wrap:nowrap; margin-top:.25rem; align-items:center; }
-    .evento-meta-item { display:flex; align-items:center; gap:.35rem; padding:.45rem .6rem; border-radius:.6rem; background:linear-gradient(135deg, #2d2f33 0%, #3a3d44 50%, #4a4f58 100%); color:#fff; font-size:.70rem; line-height:1; position:relative; box-shadow:0 2px 4px rgba(0,0,0,.35); }
-    .evento-meta-item.hora-item { margin-left: auto; }
-    .evento-meta-item .material-symbols-outlined { font-size:16px; opacity:.9; }
-    .evento-meta-item .label { text-transform:uppercase; font-weight:600; letter-spacing:.5px; font-size:.60rem; opacity:.75; }
-    .evento-meta-item .value { font-weight:600; font-size:.80rem; letter-spacing:.3px; }
-    @media (min-width:640px){ .evento-meta-item { font-size:.75rem; } .evento-meta-item .value { font-size:.85rem; } }
+    /* Bloque fecha/hora mejorado - Layout vertical en móvil */
+    .evento-meta { display:flex; gap:.5rem; flex-direction:column; margin-top:.25rem; }
+    .evento-meta-item { display:flex; align-items:center; gap:.35rem; padding:.5rem .7rem; border-radius:.6rem; background:linear-gradient(135deg, #2d2f33 0%, #3a3d44 50%, #4a4f58 100%); color:#fff; font-size:.75rem; line-height:1; position:relative; box-shadow:0 2px 4px rgba(0,0,0,.35); width:100%; }
+    .evento-meta-item .material-symbols-outlined { font-size:18px; opacity:.9; flex-shrink:0; }
+    .evento-meta-item .label { text-transform:uppercase; font-weight:600; letter-spacing:.5px; font-size:.65rem; opacity:.75; margin-left:auto; flex-shrink:0; white-space:nowrap; }
+    .evento-meta-item .value { font-weight:600; font-size:.85rem; letter-spacing:.3px; white-space:nowrap; flex-shrink:0; }
+    /* En tablet y escritorio: layout horizontal */
+    @media (min-width:640px){ 
+        .evento-meta { flex-direction:row; } 
+        .evento-meta-item { width:auto; font-size:.75rem; padding:.45rem .6rem; } 
+        .evento-meta-item .value { font-size:.85rem; }
+        .evento-meta-item .label { margin-left:0; }
+    }
+    /* En pantallas grandes (lg+): hora a la derecha */
+    @media (min-width:1024px){ 
+        .evento-meta-item:last-child { margin-left: auto; }
+    }
+    /* Si no caben en horizontal, volver a vertical */
+    @container (max-width: 280px) {
+        .evento-meta { flex-direction:column !important; }
+        .evento-meta-item { width:100% !important; }
+        .evento-meta-item:last-child { margin-left: 0 !important; }
+    }
     @media (prefers-color-scheme: dark){ .evento-meta-item { background:linear-gradient(135deg,#3a3d44,#50555f); } }
+    /* Estilo atenuado para eventos pasados */
+    .evento-card.pasado {
+        opacity: 0.6;
+        filter: grayscale(0.3);
+    }
+    .evento-card.pasado .evento-header {
+        background-image: linear-gradient(to bottom right,
+            rgba(60,60,65,0.7),
+            rgba(75,75,80,0.72),
+            rgba(90,90,95,0.75)
+        ), url('{{ url_for('static', filename='img/evento_bg.svg') }}');
+    }
+    .evento-card.pasado:hover {
+        opacity: 0.75;
+    }
 </style>
 
 <main class="flex-1 p-8 bg-background-light text-text-light">
@@ -61,31 +91,48 @@
         <!-- Barra de búsqueda -->
         <div class="px-4 py-3">
             <label class="flex flex-col min-w-40 h-12 w-full max-w-lg mx-auto">
-                <div class="flex w-full flex-1 items-stretch rounded-xl h-full shadow-sm">
-                    <div class="text-gray-500 flex border-r-0 bg-white items-center justify-center pl-4 rounded-l-xl">
+                <div class="flex w-full flex-1 items-stretch rounded-xl h-full shadow-sm bg-white border border-gray-300 focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all">
+                    <div class="text-gray-500 flex items-center justify-center pl-4">
                         <span class="material-symbols-outlined">search</span>
                     </div>
                     <input id="search-eventos"
-                        class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-text-light focus:outline-0 focus:ring-2 focus:ring-primary border-gray-300 bg-white focus:border-primary h-full placeholder:text-gray-400 px-4 rounded-l-none border-l-0 pl-2 text-base font-normal"
+                        class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-text-light focus:outline-0 border-0 bg-transparent h-full placeholder:text-gray-400 px-4 pl-2 text-base font-normal rounded-r-xl"
                         placeholder="Buscar eventos por nombre" />
                 </div>
             </label>
         </div>
 
-        <!-- Botón Crear Nuevo -->
+        <!-- Pestañas de Filtro -->
         <div class="px-4">
-            <a href="{{ url_for('crear_evento_view', referer='eventos') }}"
-                class="inline-flex items-center justify-center rounded-lg px-4 py-2 bg-primary text-white hover:bg-primary/90 transition-colors">
-                <span class="material-symbols-outlined mr-2">add</span>
-                Crear nuevo evento
-            </a>
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <!-- Pestañas -->
+                <div class="inline-flex rounded-lg border border-gray-300 bg-white p-1 shadow-sm">
+                    <button id="tab-activos" class="tab-filter px-4 py-2 rounded-md text-sm font-medium transition-all bg-primary text-white" data-filter="activos">
+                        <span class="material-symbols-outlined text-sm mr-1 align-middle">event_available</span>
+                        Activos
+                    </button>
+                    <button id="tab-pasados" class="tab-filter px-4 py-2 rounded-md text-sm font-medium transition-all text-gray-600 hover:text-gray-900" data-filter="pasados">
+                        <span class="material-symbols-outlined text-sm mr-1 align-middle">history</span>
+                        Pasados
+                    </button>
+                </div>
+                <!-- Botón Crear Nuevo -->
+                <a href="{{ url_for('crear_evento_view', referer='eventos') }}"
+                    class="inline-flex items-center justify-center rounded-lg px-4 py-2 bg-primary text-white hover:bg-primary/90 transition-colors">
+                    <span class="material-symbols-outlined mr-2">add</span>
+                    Crear nuevo evento
+                </a>
+            </div>
         </div>
 
     <!-- Grid de Eventos -->
-    <div id="eventos-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div id="eventos-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4" style="container-type: inline-size;">
             {% for evento in eventos %}
             <!-- Tarjeta de Evento Compacta -->
-            <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-200">
+            <div class="evento-card bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-200" 
+                 data-fecha="{{ evento.fecha_evento }}" 
+                 data-nombre="{{ evento.nombre|lower }}"
+                 style="container-type: inline-size;">
                 
                 <!-- Header con imagen + gradiente grisáceo oscuro para alta legibilidad -->
                 <div class="evento-header relative p-4 h-24 flex items-end bg-no-repeat bg-center bg-cover">
@@ -111,7 +158,7 @@
                             <span class="value">{{ evento.fecha_evento }}</span>
                             <span class="label">Fecha</span>
                         </div>
-                        <div class="evento-meta-item hora-item">
+                        <div class="evento-meta-item">
                             <span class="material-symbols-outlined">schedule</span>
                             <span class="value">
                                 {%- set _hora = evento.hora_evento|string -%}
@@ -125,16 +172,14 @@
                         </div>
                     </div>
                     
-                    <!-- Botones compactos -->
-                    <div class="flex gap-2">
-                        <button data-id="{{ evento.id }}" data-type="evento" class="btn-view-event flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-colors text-xs font-medium">
-                            <span class="material-symbols-outlined" style="font-size: 14px;">visibility</span>
-                            <span class="text-xs">Ver</span>
+                    <!-- Botones compactos - Solo iconos -->
+                    <div class="flex gap-2 mt-3 justify-end">
+                        <button data-id="{{ evento.id }}" data-type="evento" title="Ver detalles" class="btn-view-event flex items-center justify-center w-8 h-8 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-colors">
+                            <span class="material-symbols-outlined" style="font-size: 20px;">visibility</span>
                         </button>
-                        <form method="POST" action="{{ url_for('eliminar_evento_view', id=evento.id) }}" class="flex-1">
-                            <button type="submit" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="w-full flex items-center justify-center gap-1 px-2 py-1 rounded-md bg-red-500 text-white hover:bg-red-600 transition-colors text-xs font-medium">
-                                <span class="material-symbols-outlined" style="font-size: 14px;">delete</span>
-                                <span class="text-xs">Eliminar</span>
+                        <form method="POST" action="{{ url_for('eliminar_evento_view', id=evento.id) }}">
+                            <button type="submit" title="Eliminar evento" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="flex items-center justify-center w-8 h-8 rounded-md bg-red-500 text-white hover:bg-red-600 transition-colors">
+                                <span class="material-symbols-outlined" style="font-size: 20px;">delete</span>
                             </button>
                         </form>
                     </div>
@@ -142,6 +187,103 @@
             </div>
             {% endfor %}
         </div>
+
+        <!-- Mensaje cuando no hay eventos -->
+        <div id="no-eventos-msg" class="hidden px-4 py-8 text-center text-gray-500">
+            <span class="material-symbols-outlined text-6xl opacity-30">event_busy</span>
+            <p class="mt-4 text-lg font-medium">No hay eventos en esta categoría</p>
+        </div>
     </div>
 </main>
+
+<script>
+// Sistema de filtrado de eventos
+const tabButtons = document.querySelectorAll('.tab-filter');
+const eventosGrid = document.getElementById('eventos-grid');
+const noEventosMsg = document.getElementById('no-eventos-msg');
+const searchInput = document.getElementById('search-eventos');
+let currentFilter = 'activos';
+
+// Fecha actual para comparación
+const hoy = new Date();
+hoy.setHours(0, 0, 0, 0);
+
+// Función para verificar si un evento es pasado
+function esPasado(fechaEvento) {
+    const partes = fechaEvento.split('-');
+    const fecha = new Date(partes[0], partes[1] - 1, partes[2]);
+    return fecha < hoy;
+}
+
+// Función para aplicar filtros
+function aplicarFiltros() {
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.evento-card');
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+        const fechaEvento = card.dataset.fecha;
+        const nombreEvento = card.dataset.nombre;
+        const isPasado = esPasado(fechaEvento);
+        
+        // Aplicar clase visual para eventos pasados
+        if (isPasado) {
+            card.classList.add('pasado');
+        } else {
+            card.classList.remove('pasado');
+        }
+        
+        // Verificar filtro de tiempo
+        let matchesTiempo = false;
+        if (currentFilter === 'activos') {
+            matchesTiempo = !isPasado;
+        } else if (currentFilter === 'pasados') {
+            matchesTiempo = isPasado;
+        }
+        
+        // Verificar búsqueda
+        const matchesSearch = !searchTerm || nombreEvento.includes(searchTerm);
+        
+        // Mostrar/ocultar
+        if (matchesTiempo && matchesSearch) {
+            card.style.display = '';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    // Mostrar mensaje si no hay eventos
+    if (visibleCount === 0) {
+        eventosGrid.classList.add('hidden');
+        noEventosMsg.classList.remove('hidden');
+    } else {
+        eventosGrid.classList.remove('hidden');
+        noEventosMsg.classList.add('hidden');
+    }
+}
+
+// Event listeners para pestañas
+tabButtons.forEach(btn => {
+    btn.addEventListener('click', function() {
+        // Actualizar estilos de pestañas
+        tabButtons.forEach(b => {
+            b.classList.remove('bg-primary', 'text-white');
+            b.classList.add('text-gray-600', 'hover:text-gray-900');
+        });
+        this.classList.add('bg-primary', 'text-white');
+        this.classList.remove('text-gray-600', 'hover:text-gray-900');
+        
+        // Actualizar filtro
+        currentFilter = this.dataset.filter;
+        aplicarFiltros();
+    });
+});
+
+// Event listener para búsqueda
+searchInput.addEventListener('input', aplicarFiltros);
+
+// Aplicar filtro inicial
+aplicarFiltros();
+</script>
 {% endblock %}

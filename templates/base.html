@@ -32,14 +32,14 @@
     <!-- Responsive Sidebar & Hamburger -->
     <div class="d-flex" style="min-height:100vh;">
         <!-- Hamburger button (visible on mobile) -->
-        <button id="sidebarToggle" class="btn btn-dark d-md-none position-fixed" style="top:16px;left:16px;z-index:1100;">
+        <button id="sidebarToggle" class="btn btn-dark d-md-none position-fixed shadow-lg" style="top:10px;left:10px;z-index:1100;padding:8px 12px;">
             <span class="fa fa-bars"></span>
         </button>
 
         <!-- Sidebar -->
-        <aside role="complementary" aria-label="Sidebar" id="sidebar" class="bg-dark text-light flex-shrink-0 p-3 sidebar-responsive"
-            style="width:16rem;transition:left 0.3s;left:0;z-index:1090;">
-            <div class="d-flex flex-column" style="gap:.75rem;">
+        <aside role="complementary" aria-label="Sidebar" id="sidebar" class="bg-dark text-light flex-shrink-0 p-3 sidebar-responsive position-fixed position-md-relative"
+            style="width:16rem;transition:left 0.3s,transform 0.3s;left:0;z-index:1090;height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+            <div class="d-flex flex-column" style="gap:.75rem;min-height:100%;padding-bottom:2rem;">
                 <!-- Usuario  -->
                 <div class="d-flex align-items-center gap-3 mb-2">
                     <div class="rounded-circle"
@@ -136,55 +136,81 @@
         <!-- Añadido padding superior e inferior para separar el contenido del borde superior
              sin afectar al sidebar. Usamos clases responsive para un término medio en móvil y
              más aire en pantallas grandes. -->
-        <main class="flex-grow-1 bg-background-light pt-6 pb-5 px-3 px-md-4 pt-md-8 d-flex flex-column" style="min-height:100vh;">
+        <main class="flex-grow-1 bg-background-light pt-6 pb-5 px-3 px-md-4 pt-md-8 d-flex flex-column" style="min-height:100vh;overflow-x:hidden;width:100%;margin-left:0;">
             <div class="flex-grow-1">
                 {% block content %}{% endblock %}
             </div>
         </main>
     </div>
+    
+    <!-- Overlay para cerrar sidebar en móvil -->
+    <div id="sidebarOverlay" class="d-none position-fixed top-0 start-0 w-100 h-100 bg-dark" style="opacity:0.5;z-index:1080;"></div>
 
     <script>
     // Sidebar responsive toggle
     document.addEventListener('DOMContentLoaded', function() {
         var sidebar = document.getElementById('sidebar');
         var toggleBtn = document.getElementById('sidebarToggle');
+        var overlay = document.getElementById('sidebarOverlay');
+        
         function closeSidebar() {
-            sidebar.style.left = '-18rem';
+            if (window.innerWidth < 768) {
+                sidebar.style.transform = 'translateX(-100%)';
+                overlay.classList.add('d-none');
+            }
         }
+        
         function openSidebar() {
-            sidebar.style.left = '0';
+            if (window.innerWidth < 768) {
+                sidebar.style.transform = 'translateX(0)';
+                overlay.classList.remove('d-none');
+            } else {
+                sidebar.style.transform = 'translateX(0)';
+                overlay.classList.add('d-none');
+            }
         }
+        
         // Inicialmente oculto en móvil
         function checkWidth() {
+            var main = document.querySelector('main');
             if (window.innerWidth < 768) {
                 closeSidebar();
                 toggleBtn.style.display = '';
+                main.style.marginLeft = '0';
             } else {
                 openSidebar();
                 toggleBtn.style.display = 'none';
+                main.style.marginLeft = '16rem';
             }
         }
+        
         checkWidth();
         window.addEventListener('resize', checkWidth);
-        toggleBtn.addEventListener('click', function() {
-            if (sidebar.style.left === '0px' || sidebar.style.left === '0') {
+        
+        toggleBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (sidebar.style.transform === 'translateX(0px)' || sidebar.style.transform === '') {
                 closeSidebar();
             } else {
                 openSidebar();
             }
         });
-        // Cerrar sidebar al hacer click fuera en móvil
-        document.addEventListener('click', function(e) {
-            if (window.innerWidth < 768 && sidebar.style.left === '0px') {
-                if (!sidebar.contains(e.target) && e.target !== toggleBtn) {
-                    closeSidebar();
-                }
-            }
+        
+        // Cerrar sidebar al hacer click en overlay
+        overlay.addEventListener('click', function() {
+            closeSidebar();
         });
-        // Asegurar misma fuente y peso activo en enlaces
+        
+        // Cerrar sidebar al hacer click en un enlace en móvil
         document.querySelectorAll('.sidebar-link').forEach(function(link){
             link.style.fontWeight = '500';
+            link.addEventListener('click', function() {
+                if (window.innerWidth < 768) {
+                    closeSidebar();
+                }
+            });
         });
+
 
         // Mini calendario
         let currentDate = new Date();
@@ -192,7 +218,8 @@
         function renderCalendar() {
             const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
                               'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-            const dayNames = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+            // Cambiado para empezar en Lunes
+            const dayNames = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
             
             const month = currentDate.getMonth();
             const year = currentDate.getFullYear();
@@ -200,7 +227,11 @@
             
             document.getElementById('calendarMonth').textContent = monthNames[month] + ' ' + year;
             
-            const firstDay = new Date(year, month, 1).getDay();
+            // Obtener primer día del mes (0=Domingo, 1=Lunes, etc.)
+            let firstDay = new Date(year, month, 1).getDay();
+            // Ajustar para que Lunes sea 0 en lugar de Domingo
+            firstDay = (firstDay === 0) ? 6 : firstDay - 1;
+            
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             
             let html = '';
@@ -221,8 +252,13 @@
                                month === today.getMonth() && 
                                year === today.getFullYear();
                 
-                const classes = isToday ? 'bg-primary text-white rounded-circle' : 'text-light';
-                html += `<div class="text-center ${classes}" style="padding: 2px; aspect-ratio: 1;">${day}</div>`;
+                if (isToday) {
+                    html += `<div class="text-center" style="padding: 1px; aspect-ratio: 1; font-size: 0.65rem; display: flex; align-items: center; justify-content: center;">
+                        <span class="bg-primary text-white rounded-circle" style="width: 85%; height: 85%; display: flex; align-items: center; justify-content: center;">${day}</span>
+                    </div>`;
+                } else {
+                    html += `<div class="text-center text-light" style="padding: 1px; aspect-ratio: 1; font-size: 0.65rem; display: flex; align-items: center; justify-content: center;">${day}</div>`;
+                }
             }
             
             document.getElementById('calendarDays').innerHTML = html;

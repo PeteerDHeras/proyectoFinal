@@ -36,6 +36,37 @@ app.secret_key = os.getenv('SECRET_KEY', 'clave_secreta_segura')
 # Nota: En producción con múltiples procesos/containers conviene usar tabla en BD o Redis.
 ACTIVE_USER_SESSIONS = {}
 SESSION_TTL_MINUTES = 30  # Expiración de sesión inactiva para permitir reconexión
+SESSION_MAX_AGE_HOURS = 24  # Tiempo máximo absoluto de sesión (fuerza re-login)
+
+def cleanup_expired_sessions():
+    """Limpia sesiones expiradas del diccionario ACTIVE_USER_SESSIONS.
+    
+    Se ejecuta automáticamente antes de cada login para evitar bloqueos
+    por sesiones huérfanas (browser cerrado sin logout).
+    """
+    now = datetime.utcnow()
+    expired_users = []
+    
+    for usuario, data in ACTIVE_USER_SESSIONS.items():
+        last_active = data.get('last_active')
+        if not last_active:
+            expired_users.append(usuario)
+            continue
+            
+        # Expirar si excede TTL de inactividad
+        inactive_time = now - last_active
+        if inactive_time > timedelta(minutes=SESSION_TTL_MINUTES):
+            expired_users.append(usuario)
+            print(f"[SESSION CLEANUP] Usuario '{usuario}' expirado por inactividad ({inactive_time.total_seconds()/60:.1f} min)")
+    
+    # Remover sesiones expiradas
+    for usuario in expired_users:
+        ACTIVE_USER_SESSIONS.pop(usuario, None)
+    
+    if expired_users:
+        print(f"[SESSION CLEANUP] Limpiadas {len(expired_users)} sesiones expiradas")
+    
+    return len(expired_users)
 
 # Filtro Jinja para mostrar el usuario con primera letra mayúscula sin alterar el resto
 @app.template_filter('capitalizar_primera')
@@ -92,16 +123,39 @@ def login_required(f):
         usuario = session.get('usuario')
         token = session.get('session_token')
         if not usuario or not token:
+            session.clear()
+            flash('Sesión expirada. Por favor inicia sesión nuevamente.', 'error')
             return redirect(url_for('login'))
+        
         data = ACTIVE_USER_SESSIONS.get(usuario)
+        
         # Validar que exista y coincida token
         if not data or data.get('token') != token:
-            # Sesión inválida (otro dispositivo inició sesión o expirada)
+            # Sesión inválida (otro dispositivo inició sesión o limpiada por inactividad)
             session.clear()
-            flash('Tu sesión ha sido invalidada (iniciada en otro dispositivo).', 'error')
+            flash('Tu sesión ha sido invalidada. Puede que hayas iniciado sesión en otro dispositivo.', 'error')
             return redirect(url_for('login'))
+        
+        # Verificar si la sesión ha expirado por inactividad
+        last_active = data.get('last_active')
+        if not last_active:
+            session.clear()
+            ACTIVE_USER_SESSIONS.pop(usuario, None)
+            flash('Sesión expirada. Por favor inicia sesión nuevamente.', 'error')
+            return redirect(url_for('login'))
+        
+        now = datetime.utcnow()
+        inactive_time = now - last_active
+        
+        if inactive_time > timedelta(minutes=SESSION_TTL_MINUTES):
+            # Sesión expirada por inactividad
+            session.clear()
+            ACTIVE_USER_SESSIONS.pop(usuario, None)
+            flash(f'Tu sesión expiró por inactividad ({SESSION_TTL_MINUTES} minutos). Por favor inicia sesión nuevamente.', 'error')
+            return redirect(url_for('login'))
+        
         # Actualizar last_active
-        data['last_active'] = datetime.utcnow()
+        data['last_active'] = now
         return f(*args, **kwargs)
     return decorated_function
 
@@ -121,6 +175,8 @@ def login():
     if request.method == 'POST':
         usuario = sanitizar_texto(request.form.get('usuario', ''))
         password = request.form.get('password', '')
+        force_login = request.form.get('force_login') == 'true'
+        
         # Validaciones básicas login
         errors = []
         if not validar_no_vacio(usuario) or not validar_no_vacio(password):
@@ -129,17 +185,37 @@ def login():
             errors.append('Usuario debe tener entre 3 y 50 caracteres')
         if errors:
             return render_template('login.html', errors=errors)
-        # Bloqueo si ya está activo en otro dispositivo y sesión no expirada
+        
+        # PASO 1: Limpiar sesiones expiradas globalmente
+        cleanup_expired_sessions()
+        
+        # PASO 2: Bloqueo si ya está activo en otro dispositivo y sesión no expirada
         existing = ACTIVE_USER_SESSIONS.get(usuario)
-        if existing:
-            # Comprobar expiración por inactividad
+        if existing and not force_login:
+            # Comprobar expiración por inactividad (doble verificación)
             last_active = existing.get('last_active')
-            if last_active and (datetime.utcnow() - last_active) < timedelta(minutes=SESSION_TTL_MINUTES):
-                return render_template('login.html', errors=['El usuario ya tiene una sesión activa en otro dispositivo. Intenta más tarde o cierra sesión allí.'])
-            else:
-                # Expirada -> permitir nuevo login anulando la anterior
-                ACTIVE_USER_SESSIONS.pop(usuario, None)
+            if last_active:
+                inactive_time = datetime.utcnow() - last_active
+                
+                # Si la sesión está activa (no expirada)
+                if inactive_time < timedelta(minutes=SESSION_TTL_MINUTES):
+                    minutes_remaining = SESSION_TTL_MINUTES - int(inactive_time.total_seconds() / 60)
+                    return render_template(
+                        'login.html',
+                        errors=[f'Ya hay una sesión activa para este usuario (expira en ~{minutes_remaining} min). Si eres tú y no puedes acceder desde el otro dispositivo, usa "Forzar inicio de sesión" abajo.'],
+                        show_force_login=True,
+                        usuario_bloqueado=usuario
+                    )
+            
+            # Si llegamos aquí, la sesión ya expiró -> limpiarla
+            ACTIVE_USER_SESSIONS.pop(usuario, None)
+        
+        # PASO 3: Si force_login=true, cerrar sesión anterior forzadamente
+        if force_login and existing:
+            print(f"[FORCE LOGIN] Usuario '{usuario}' forzó cierre de sesión anterior")
+            ACTIVE_USER_SESSIONS.pop(usuario, None)
 
+        # PASO 4: Verificar credenciales
         if verificar_usuario(usuario, password):
             # Obtener información del usuario incluyendo rol
             user = obtener_usuario_por_nombre(usuario)
@@ -152,8 +228,11 @@ def login():
                 'token': token,
                 'last_active': datetime.utcnow()
             }
+            print(f"[LOGIN] Usuario '{usuario}' inició sesión exitosamente (token: {token[:8]}...)")
             return redirect(url_for('dashboard'))
+        
         return render_template('login.html', errors=['Credenciales inválidas'])
+    
     return render_template('login.html')
 
 
@@ -161,10 +240,14 @@ def login():
 def logout():
     """Cierra la sesión del usuario."""
     usuario = session.get('usuario')
-    if usuario in ACTIVE_USER_SESSIONS:
-        ACTIVE_USER_SESSIONS.pop(usuario, None)
-    session.pop('session_token', None)
-    session.pop('usuario', None)
+    if usuario:
+        if usuario in ACTIVE_USER_SESSIONS:
+            ACTIVE_USER_SESSIONS.pop(usuario, None)
+            print(f"[LOGOUT] Usuario '{usuario}' cerró sesión correctamente")
+    
+    # Limpiar completamente la sesión
+    session.clear()
+    flash('Has cerrado sesión correctamente.', 'success')
     return redirect(url_for('login'))
 
 
@@ -1089,6 +1172,32 @@ def eliminar_tarea_admin():
     return redirect(url_for('ajustes_usuario'))
 
 
+@app.route('/admin/cerrar-sesion-usuario', methods=['POST'])
+@login_required
+def cerrar_sesion_usuario_admin():
+    """Cerrar la sesión activa de un usuario específico (solo admin)."""
+    usuario_actual = session.get('usuario')
+    user = obtener_usuario_por_nombre(usuario_actual)
+    
+    if not user or user.get('rol', 1) != 3:
+        flash('No tienes permisos de administrador', 'error')
+        return redirect(url_for('dashboard'))
+    
+    usuario_objetivo = request.form.get('usuario')
+    if not usuario_objetivo:
+        flash('Usuario no especificado', 'error')
+        return redirect(url_for('ajustes_usuario'))
+    
+    if usuario_objetivo in ACTIVE_USER_SESSIONS:
+        ACTIVE_USER_SESSIONS.pop(usuario_objetivo, None)
+        flash(f'Sesión de "{usuario_objetivo}" cerrada correctamente', 'success')
+        print(f"[ADMIN] {usuario_actual} cerró la sesión de {usuario_objetivo}")
+    else:
+        flash(f'El usuario "{usuario_objetivo}" no tiene sesión activa', 'error')
+    
+    return redirect(url_for('ajustes_usuario'))
+
+
 # ------------------ AJUSTES DE USUARIO ------------------
 
 @app.route('/ajustes-usuario', methods=['GET'])
@@ -1102,6 +1211,23 @@ def ajustes_usuario():
     es_admin = user and user.get('rol', 1) == 3
     
     admin_data = _build_admin_data() if es_admin else {}
+    
+    # Si es admin, añadir info de sesiones activas
+    if es_admin:
+        sesiones_activas = []
+        now = datetime.utcnow()
+        for usuario, data in ACTIVE_USER_SESSIONS.items():
+            last_active = data.get('last_active')
+            if last_active:
+                inactive_minutes = int((now - last_active).total_seconds() / 60)
+                sesiones_activas.append({
+                    'usuario': usuario,
+                    'last_active': last_active.strftime('%Y-%m-%d %H:%M:%S'),
+                    'inactive_minutes': inactive_minutes,
+                    'token_preview': data.get('token', '')[:8] + '...'
+                })
+        admin_data['sesiones_activas'] = sesiones_activas
+    
     return render_template('ajustes_usuario.html', es_admin=es_admin, admin_data=admin_data)
 
 
