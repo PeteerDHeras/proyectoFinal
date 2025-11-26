@@ -19,12 +19,10 @@
     font-family: 'Inter', sans-serif !important;
 }
 </style>
-<div class="container-lg border border-2 border-dark rounded-4 pt-6 mt-4 ">
-    <div class="row">
-        <div class="col-12">
-            <h2 class="mb-4">Calendario</h2>
-            <div id="calendar"></div>
-        </div>
+<div class="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+    <div class="bg-white border-2 border-gray-300 rounded-2xl p-4 sm:p-6 shadow-lg">
+        <h2 class="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-gray-900">Calendario</h2>
+        <div id="calendar" class="overflow-x-auto"></div>
     </div>
 </div>
 {% endblock %}
