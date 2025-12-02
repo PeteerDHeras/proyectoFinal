@@ -109,20 +109,18 @@ Este proyecto está bajo la licencia **Creative Commons BY-NC 4.0**
 Puedes usarlo y modificarlo libremente para fines **no comerciales**, siempre que cites la autoría.  
 [Ver texto completo de la licencia.](https://creativecommons.org/licenses/by-nc/4.0/)
 
----
 
 ## 📎 Recursos adicionales
 
-- [Diagrama E/R](./docs/diagrama_er.png)
-- [Casos de uso](./docs/casos_de_uso.pdf)
-- [Manual de usuario](./docs/manual_usuario.pdf)
-- [Manual de configuración](./docs/manual_configuracion.pdf)
 
----
 
+## Presentación (Reveal.js)
+- Presentación standalone: abre `presentation/index.html` (independiente del backend) y coloca capturas en `presentation/assets/`.
+- Usa CDN de Reveal.js y su propio tema (`presentation/theme.css`).
 ## 🙌 Agradecimientos
 
 Gracias al profesorado del ciclo de DAW por el apoyo y orientación durante todo el proceso de aprendizaje.
 
 ---
+
 

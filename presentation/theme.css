@@ -1,0 +1,17 @@
+/* Tema standalone para la presentación */
+html, body { background: #121826; }
+.reveal { font-size: 30px; color: #e5e7eb; }
+.reveal a { color: #7dd3fc; }
+.reveal strong { color: #93c5fd; }
+.reveal code { color: #bfdbfe; }
+.reveal h1 { font-size: 1.8em; }
+.reveal h2 { font-size: 1.4em; }
+.reveal h3 { font-size: 1.2em; }
+.reveal h1, .reveal h2, .reveal h3 { letter-spacing: 0.5px; }
+.reveal h1, .reveal h2 { color: #f3f4f6; }
+.reveal h3 { color: #d1d5db; }
+.reveal p, .reveal li { font-size: 0.95em; }
+.reveal pre code { font-size: 0.8em; background: rgba(255,255,255,0.06); border-radius: 8px; padding: 0.75rem 1rem; }
+.reveal .slides section { text-align: left; }
+.reveal .slides section:first-child { text-align: center; }
+.cover-logo { display: inline-block; max-width: 96px; width: 18vw; }

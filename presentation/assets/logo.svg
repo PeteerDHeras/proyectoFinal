@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="gradientPurplePink" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#A855F7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F472B6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Calendario base con bordes redondeados -->
+  <rect x="130" y="150" width="252" height="252" rx="50" fill="url(#gradientPurplePink)"/>
+  
+  <!-- Espacio blanco interior -->
+  <rect x="165" y="230" width="182" height="140" rx="20" fill="#FFFFFF"/>
+  
+  <!-- Anillas superiores redondeadas -->
+  <rect x="210" y="120" width="35" height="70" rx="17.5" fill="url(#gradientPurplePink)"/>
+  <rect x="267" y="120" width="35" height="70" rx="17.5" fill="url(#gradientPurplePink)"/>
+  
+  <!-- Contorno blanco de las anillas -->
+  <rect x="210" y="120" width="35" height="40" rx="17.5" fill="none" stroke="#FFFFFF" stroke-width="8"/>
+  <rect x="267" y="120" width="35" height="40" rx="17.5" fill="none" stroke="#FFFFFF" stroke-width="8"/>
+  
+  <!-- Checkmark con gradiente -->
+  <path d="M 200 285 L 235 320 L 310 245" 
+        stroke="url(#gradientPurplePink)" 
+        stroke-width="28" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" 
+        fill="none"/>
+</svg>

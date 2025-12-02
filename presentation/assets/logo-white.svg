@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Logo versión monocromática blanca para usar sobre fondo oscuro -->
+  
+  <!-- Calendario base con bordes redondeados -->
+  <rect x="130" y="150" width="252" height="252" rx="50" fill="#FFFFFF" opacity="0.15"/>
+  
+  <!-- Borde del calendario -->
+  <rect x="130" y="150" width="252" height="252" rx="50" fill="none" stroke="#FFFFFF" stroke-width="8" opacity="0.9"/>
+  
+  <!-- Espacio blanco interior -->
+  <rect x="165" y="230" width="182" height="140" rx="20" fill="#FFFFFF" opacity="0.25"/>
+  
+  <!-- Anillas superiores redondeadas -->
+  <rect x="210" y="120" width="35" height="70" rx="17.5" fill="#FFFFFF" opacity="0.9"/>
+  <rect x="267" y="120" width="35" height="70" rx="17.5" fill="#FFFFFF" opacity="0.9"/>
+  
+  <!-- Checkmark blanco -->
+  <path d="M 200 285 L 235 320 L 310 245" 
+        stroke="#FFFFFF" 
+        stroke-width="28" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" 
+        fill="none"
+        opacity="0.95"/>
+</svg>
