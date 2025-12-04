@@ -393,12 +393,6 @@ def dashboard():
 
 # ----------------- CALENDARIO ----------------
 
-@app.route('/calendar')
-@login_required
-def calendar():
-    """Página con FullCalendar; los eventos se obtienen desde /api/eventos."""
-    return render_template('calendar.html')
-
 
 # ------------------ EVENTOS ------------------
 
@@ -708,11 +702,28 @@ def api_eventos():
             if not fecha:
                 continue
             
+            # Convertir fecha a string si no lo es
+            if not isinstance(fecha, str):
+                fecha = str(fecha)
+            
             hora = t.get('hora_evento')
             
-            # Si tiene hora, formatear como datetime; si no, marcar como allDay
+            # Normalizar hora (puede ser timedelta, time, o string)
+            hora_normalizada = None
             if hora:
-                start_datetime = f"{fecha}T{hora}"
+                if isinstance(hora, str):
+                    hora_normalizada = hora[:5] if len(hora) >= 5 else hora
+                elif hasattr(hora, 'total_seconds'):  # timedelta
+                    total = int(hora.total_seconds())
+                    hours = (total // 3600) % 24
+                    minutes = (total % 3600) // 60
+                    hora_normalizada = f"{hours:02d}:{minutes:02d}"
+                elif hasattr(hora, 'strftime'):  # time object
+                    hora_normalizada = hora.strftime('%H:%M')
+            
+            # Si tiene hora, formatear como datetime; si no, marcar como allDay
+            if hora_normalizada:
+                start_datetime = f"{fecha}T{hora_normalizada}"
                 all_day = False
             else:
                 start_datetime = fecha
@@ -735,6 +746,22 @@ def api_eventos():
             continue
 
     return jsonify(eventos_json)
+
+
+@app.route('/api/eventos-semana-count', methods=['GET'])
+@login_required
+def obtener_eventos_semana_count():
+    """API para obtener el conteo de eventos de la semana actual sin recargar."""
+    usuario_actual = session.get('usuario')
+    user = obtener_usuario_por_nombre(usuario_actual)
+    usuario_id = user['id'] if user else None
+    
+    try:
+        from db import obtener_eventos_semana
+        count = obtener_eventos_semana(usuario_id)
+        return jsonify({'count': count})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/eventos/<int:evento_id>', methods=['PUT'])

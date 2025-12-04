@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // entre días y abre el modal de detalle al hacer click.
   const calendar = new FullCalendar.Calendar(calendarEl, {
     locale: 'es',
-    initialView: 'dayGridMonth',
+    initialView: 'timeGridWeek',
     firstDay: 1,
     headerToolbar: {
       left: 'prev,next today',
@@ -458,11 +458,25 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!res.ok) { mostrarError(res.body.error || 'Error creando evento'); return; }
         // Recargar eventos desde servidor para asegurar coherencia
         if (window.calendar) window.calendar.refetchEvents();
+        // Actualizar conteo de eventos de la semana
+        actualizarConteoEventosSemana();
         showToast('Evento creado', 'success');
         cerrar();
       })
       .catch(err => { console.error(err); mostrarError('Error de red creando evento'); });
     });
+
+    function actualizarConteoEventosSemana() {
+      fetch('/api/eventos-semana-count')
+        .then(r => r.json())
+        .then(data => {
+          const contador = document.querySelector('p.text-yellow-500.text-3xl.font-bold');
+          if (contador) {
+            contador.textContent = data.count;
+          }
+        })
+        .catch(err => console.warn('Error actualizando contador eventos:', err));
+    }
 
     function mostrarError(msg){
       const box = modal.querySelector('#quick-error');
@@ -639,14 +653,18 @@ document.addEventListener('DOMContentLoaded', function() {
       const completada = this.checked;
       const estado = completada ? 1 : 0;
       
-      // Buscar el contenedor de la tarea (tareas.html usa gap-4, dashboard.html usa gap-3)
-      const tareaRow = this.closest('.flex.items-center.gap-4') || this.closest('.flex.items-center.gap-3');
+      // Buscar el contenedor de la tarea (soporta gap-4, gap-3 y gap-2)
+      const tareaRow = this.closest('.flex.items-center.gap-4') || 
+                       this.closest('.flex.items-center.gap-3') || 
+                       this.closest('.flex.items-center.gap-2');
       
       // Actualizar estilos INMEDIATAMENTE antes de enviar al servidor (optimistic update)
       // Esto proporciona feedback instantáneo al usuario
       if (tareaRow) {
-        // Actualizar título (h3 en tareas.html o p en dashboard.html)
-        const title = tareaRow.querySelector('h3.text-lg') || tareaRow.querySelector('p');
+        // Actualizar título: buscar el primer <p> que no sea un badge (span)
+        const allParagraphs = tareaRow.querySelectorAll('p');
+        const title = allParagraphs.length > 0 ? allParagraphs[0] : tareaRow.querySelector('h3.text-lg');
+        
         if (title) {
           if (completada) {
             title.classList.add('line-through', 'text-gray-500');

@@ -27,10 +27,34 @@
 	}
 </script>
 
+<style>
+	/* Estilos para diferenciar tareas de eventos en el calendario */
+	.fc .tarea-evento {
+		background-color: #10b981 !important;
+		border-color: #059669 !important;
+	}
+
+	.fc .tarea-evento:hover {
+		background-color: #059669 !important;
+	}
+
+	/* Mejorar tipografía del header del calendario */
+	.fc .fc-toolbar-title {
+		font-family: 'Inter', sans-serif !important;
+		font-weight: 700 !important;
+	}
+
+	.fc .fc-button {
+		font-family: 'Inter', sans-serif !important;
+	}
+</style>
+
 <!-- Panel Principal -->
 <div class="container-fluid">
 	<header class="flex flex-col md:flex-row justify-center md:justify-between items-center gap-4 mb-8">
-		<p class="text-gray-900 text-3xl md:text-4xl font-black leading-tight tracking-tighter text-center md:text-left">Panel Principal</p>
+		<p
+			class="text-gray-900 text-3xl md:text-4xl font-black leading-tight tracking-tighter text-center md:text-left">
+			Panel Principal</p>
 		<div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
 
 			<!-- Nuevo evento -->
@@ -49,9 +73,9 @@
 		</div>
 	</header>
 
-	<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-		<section class="lg:col-span-2 flex flex-col gap-8">
 
+	<section class="flex flex-col gap-8">
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 			<!-- Resumen semanal -->
 			<div class="bg-card-light p-6 rounded-xl shadow-sm flex flex-col items-start gap-4">
 				<h2 class="text-gray-900 text-xl font-bold leading-tight tracking-tight">
@@ -66,79 +90,15 @@
 							{{ completadas_semana }}/{{ total_semana }}
 						</p>
 					</div>
-					<!-- Eventos dia siguiente -->
-					<div class="bg-yellow-500/10 p-3 rounded-lg flex flex-col items-start justify-center">
-						<p class="text-gray-600 text-sm font-medium">Eventos Mañana</p>
-						<p class="text-yellow-500 text-3xl font-bold">
-							{{ eventos_manana }}
-						</p>
-					</div>
+				<!-- Eventos semana -->
+				<div class="bg-yellow-500/10 p-3 rounded-lg flex flex-col items-start justify-center">
+					<p class="text-gray-600 text-sm font-medium">Eventos de la Semana</p>
+					<p class="text-yellow-500 text-3xl font-bold">
+						{{ eventos_semana|length }}
+					</p>
+				</div>
 				</div>
 			</div>
-
-			<!-- Eventos de la Semana -->
-			<div class="bg-card-light p-6 rounded-xl shadow-sm flex flex-col items-start gap-4">
-				<h2 class="text-gray-900 text-[22px] font-bold leading-tight tracking-[-0.015em]">
-					Eventos de la Semana
-				</h2>
-
-				<!-- Lista de eventos semana -->
-				<div class="flex flex-col gap-2 w-full">
-					{% if eventos_semana %}
-					{% for evento in eventos_semana %}
-					<div class="flex items-center gap-4 bg-card-light px-4 min-h-[72px] py-2 justify-between border-b border-gray-200 last:border-b-0">
-						<div class="flex items-center gap-4">
-							<div class="text-gray-600 flex items-center justify-center rounded-lg bg-gray-100 shrink-0 size-12">
-								<span class="material-symbols-outlined">
-									{% if 'reunión' in evento.nombre|lower %}
-									groups
-									{% elif 'llamada' in evento.nombre|lower or 'call' in evento.nombre|lower %}
-									phone
-									{% elif 'diseño' in evento.nombre|lower %}
-									design_services
-									{% else %}
-									event
-									{% endif %}
-								</span>
-							</div>
-							<div class="flex flex-col justify-center items-start">
-								<p class="text-gray-900 text-base font-medium leading-normal line-clamp-1">
-									{{ evento.nombre }}
-								</p>
-								<p class="text-gray-500 text-sm mt-1 font-normal leading-normal line-clamp-2">
-									<span class="text-xs font-medium mr-2 rounded-full bg-gray-100 text-gray-600">{{ evento.label_fecha or evento.fecha_evento }}</span>
-									{%- set _hora = evento.hora_evento|string -%}
-									{%- if _hora -%}
-									{{ _hora.split(':')[:2]|join(':') }} 
-									{%- else -%}
-									&nbsp;
-									{%- endif -%}
-								</p>
-								<!-- <p class="text-xs font-medium mt-2 rounded-full bg-gray-100 text-gray-600">{{ evento.label_fecha or evento.fecha_evento }}</p> -->
-							</div>
-						</div>
-						<div class="shrink-0">
-							<button data-id="{{ evento.id }}" data-type="evento" class="link-view-event text-primary text-sm font-medium leading-normal hover:underline bg-transparent border-0 p-0">
-								Ver Detalles
-							</button>
-						</div>
-					</div>
-					{% endfor %}
-					{% else %}
-					<p class="text-gray-500 text-sm">No hay eventos esta semana.</p>
-					{% endif %}
-				</div>
-				<div class="flex justify-end w-full mt-2">
-					<a href="{{ url_for('ver_eventos') }}" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 flex items-center rounded-lg gap-2">
-						<span class="material-symbols-outlined">event</span>
-						Ver todos los eventos
-					</a>
-				</div>
-			</div>
-		</section>
-
-		<!-- Barra lateral Tareas -->
-		<aside class="flex flex-col gap-8">
 
 			<!-- Tareas de la Semana -->
 			<div class="bg-card-light p-6 rounded-xl shadow-sm flex flex-col items-start gap-4">
@@ -146,8 +106,8 @@
 					Tareas de la Semana
 				</h2>
 
-				<!-- Lista de tareas hoy -->
-				<div class="flex flex-col gap-4 w-full">
+				<!-- Lista de tareas hoy con altura fija y scroll -->
+				<div class="flex flex-col gap-2 p-1 w-full max-h-30 overflow-y-auto pr-2">
 					{% if tareas_hoy %}
 					{% for tarea in tareas_hoy %}
 					<div class="flex items-center gap-3 w-full">
@@ -162,19 +122,19 @@
 						</p>
 
 						{% if tarea.prioridad in [3, '3', 'Alta', 'alta'] %}
-						<span class="ml-auto text-xs font-medium text-yellow-800 bg-yellow-100 px-2 py-1 rounded-full">
+						<span class="ml-auto text-xs font-medium text-yellow-800 bg-yellow-100 px-1 py-1 rounded-full">
 							Alta
 						</span>
 						{% elif tarea.prioridad in [2, '2', 'Media', 'media'] %}
-						<span class="ml-auto text-xs font-medium text-blue-800 bg-blue-100 px-2 py-1 rounded-full">
+						<span class="ml-auto text-xs font-medium text-blue-800 bg-blue-100 px-1 py-1 rounded-full">
 							Media
 						</span>
 						{% elif tarea.prioridad in [1, '1', 'Baja', 'baja'] %}
-						<span class="ml-auto text-xs font-medium text-green-800 bg-green-100 px-2 py-1 rounded-full">
+						<span class="ml-auto text-xs font-medium text-green-800 bg-green-100 px-1 py-1 rounded-full">
 							Baja
 						</span>
 						{% else %}
-						<span class="ml-auto text-xs font-medium text-gray-800 bg-gray-100 px-2 py-1 rounded-full">
+						<span class="ml-auto text-xs font-medium text-gray-800 bg-gray-100 px-1 py-1 rounded-full">
 							{{ tarea.prioridad }}
 						</span>
 						{% endif %}
@@ -187,13 +147,25 @@
 
 				<div class="flex justify-end w-full mt-2">
 					<a href="{{ url_for('ver_tareas') }}"
-						class="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 flex items-center rounded-lg gap-2">
+						class="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-2 flex items-center rounded-lg gap-2">
 						<span class="material-symbols-outlined">check_circle</span>
 						Ver todas las tareas
 					</a>
 				</div>
 			</div>
-		</aside>
+		</div>
+
+
+
+
+<!-- Calendario - Ocupa todo el ancho -->
+<div class="w-full mt-1">
+	<div class="bg-card-light p-6 rounded-xl shadow-sm flex flex-col items-start gap-4">
+		<h2 class="text-gray-900 text-[22px] font-bold leading-tight tracking-[-0.015em]">
+			Calendario
+		</h2>
+		<div id="calendar" class="w-full overflow-x-auto"></div>
 	</div>
+</div>
 </div>
 {% endblock %}

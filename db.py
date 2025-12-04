@@ -568,6 +568,28 @@ def obtener_eventos_manana(usuario_id=None):
     conn.close()
     return cantidad
 
+# OBTENER EVENTOS DE LA SEMANA
+def obtener_eventos_semana(usuario_id=None):
+    """Devuelve el número de eventos de la semana actual del usuario."""
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    hoy = datetime.now().date()
+    inicio_semana = hoy - timedelta(days=hoy.weekday())       # Lunes
+    fin_semana = inicio_semana + timedelta(days=6)            # Domingo
+
+    if usuario_id:
+        query = "SELECT COUNT(*) AS eventos FROM eventos WHERE fecha_evento BETWEEN %s AND %s AND creador_evento = %s"
+        cursor.execute(query, (inicio_semana, fin_semana, usuario_id))
+    else:
+        query = "SELECT COUNT(*) AS eventos FROM eventos WHERE fecha_evento BETWEEN %s AND %s"
+        cursor.execute(query, (inicio_semana, fin_semana))
+    
+    cantidad = cursor.fetchone()['eventos']
+
+    conn.close()
+    return cantidad
+
 def obtener_usuarios():
     """Devuelve la lista de usuarios (id y nombre) para el admin."""
     conn = get_connection()

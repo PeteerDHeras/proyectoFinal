@@ -68,12 +68,6 @@
                             </a>
                         </li>
                         <li class="nav-item mb-1">
-                            <a href="{{ url_for('calendar') }}" class="nav-link text-light sidebar-link">
-                                <span class="material-symbols-outlined me-2" style="font-size: 18px; vertical-align: middle;">calendar_month</span>
-                                <span>Calendario</span>
-                            </a>
-                        </li>
-                        <li class="nav-item mb-1">
                             <a href="{{ url_for('ver_eventos') }}" class="nav-link text-light sidebar-link">
                                 <span class="material-symbols-outlined me-2" style="font-size: 18px; vertical-align: middle;">event</span>
                                 <span>Eventos</span>
@@ -104,29 +98,14 @@
                             {% endif %}
                         </li>
                     </ul>
-                    <!-- Calendario de referencia -->
-                <div class="mini-calendar bg-dark border rounded mb-3 mt-6" style="border-color: #495057 !important;">
-                    <div class="d-flex justify-content-between align-items-center mb-2 p-2">
-                            <button onclick="changeMonth(-1)" class="btn btn-sm btn-link text-light p-0" style="text-decoration: none;">
-                                <span class="material-symbols-outlined" style="font-size: 18px;">chevron_left</span>
-                            </button>
-                            <div id="calendarMonth" class="text-light fw-semibold" style="font-size: 0.85rem;"></div>
-                            <button onclick="changeMonth(1)" class="btn btn-sm btn-link text-light p-0" style="text-decoration: none;">
-                                <span class="material-symbols-outlined" style="font-size: 18px;">chevron_right</span>
-                            </button>
-                        </div>
-                        <div id="calendarDays" class="d-grid gap-1" style="grid-template-columns: repeat(7, 1fr); font-size: 0.7rem;">
-                        </div>
-                    </div>
-                    
                     <!-- Footer movido al aside -->
                     <footer class="mt-4 pt-3 border-top" style="border-color: #495057 !important;">
-                        <div class="text-muted text-center" style="font-size: 0.7rem;">
-                            <div class="mb-2">MyPlanner • v2.1</div>
-                            <div class="mb-2">© 2025 Pedro de las Heras</div>
+                        <div class="text-light text-center" style="font-size: 0.7rem;">
+                            <div class="mb-2">MyPlanner © 2025 Pedro de las Heras</div>
+                            <div class="mb-2"></div>
                             <div>
-                                <a href="{{ url_for('ayuda') }}" class="text-muted me-2" style="text-decoration: none;">Ayuda</a>
-                                <a href="{{ url_for('contacto') }}" class="text-muted" style="text-decoration: none;">Contacto</a>
+                                <a href="{{ url_for('ayuda') }}" class="text-light me-2" style="text-decoration: none;">Ayuda</a>
+                                <a href="{{ url_for('contacto') }}" class="text-light" style="text-decoration: none;">Contacto</a>
                             </div>
                         </div>
                         {% if session.get('usuario') %}
