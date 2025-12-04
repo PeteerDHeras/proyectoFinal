@@ -83,6 +83,35 @@
     .evento-card.pasado:hover {
         opacity: 0.75;
     }
+    
+    /* Modal de confirmación personalizado */
+    .confirm-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        animation: fadeIn 0.2s ease-out;
+    }
+    .confirm-modal {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        max-width: 400px;
+        width: 90%;
+        animation: slideUp 0.3s ease-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes slideUp {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
 </style>
 
 <main class="flex-1 p-8 bg-background-light text-text-light">
@@ -174,14 +203,16 @@
                     
                     <!-- Botones compactos - Solo iconos -->
                     <div class="flex gap-2 mt-3 justify-end">
-                        <button data-id="{{ evento.id }}" data-type="evento" title="Ver detalles" class="btn-view-event flex items-center justify-center w-8 h-8 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-colors">
-                            <span class="material-symbols-outlined" style="font-size: 20px;">visibility</span>
+                        <button data-id="{{ evento.id }}" data-type="evento" title="Editar evento" class="btn-view-event flex items-center justify-center w-8 h-8 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-colors">
+                            <span class="material-symbols-outlined" style="font-size: 20px;">edit</span>
                         </button>
-                        <form method="POST" action="{{ url_for('eliminar_evento_view', id=evento.id) }}">
-                            <button type="submit" title="Eliminar evento" onclick="return confirm('¿Estás seguro de eliminar este evento?')" class="flex items-center justify-center w-8 h-8 rounded-md bg-red-500 text-white hover:bg-red-600 transition-colors">
-                                <span class="material-symbols-outlined" style="font-size: 20px;">delete</span>
-                            </button>
-                        </form>
+                        <button type="button" 
+                                data-evento-id="{{ evento.id }}" 
+                                data-evento-nombre="{{ evento.nombre }}"
+                                title="Eliminar evento" 
+                                class="btn-delete-evento flex items-center justify-center w-8 h-8 rounded-md bg-red-500 text-white hover:bg-red-600 transition-colors">
+                            <span class="material-symbols-outlined" style="font-size: 20px;">delete</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -204,15 +235,24 @@ const noEventosMsg = document.getElementById('no-eventos-msg');
 const searchInput = document.getElementById('search-eventos');
 let currentFilter = 'activos';
 
-// Fecha actual para comparación
-const hoy = new Date();
-hoy.setHours(0, 0, 0, 0);
+// Fecha y hora actual para comparación
+const ahora = new Date();
 
 // Función para verificar si un evento es pasado
-function esPasado(fechaEvento) {
+function esPasado(fechaEvento, horaEvento) {
     const partes = fechaEvento.split('-');
     const fecha = new Date(partes[0], partes[1] - 1, partes[2]);
-    return fecha < hoy;
+    
+    // Si hay hora, considerar fecha y hora juntas
+    if (horaEvento && horaEvento !== '--:--') {
+        const partesHora = horaEvento.split(':');
+        fecha.setHours(parseInt(partesHora[0]), parseInt(partesHora[1]), 0, 0);
+        return fecha < ahora;
+    }
+    
+    // Si no hay hora, considerar solo la fecha (fin del día)
+    fecha.setHours(23, 59, 59, 999);
+    return fecha < ahora;
 }
 
 // Función para aplicar filtros
@@ -224,7 +264,12 @@ function aplicarFiltros() {
     cards.forEach(card => {
         const fechaEvento = card.dataset.fecha;
         const nombreEvento = card.dataset.nombre;
-        const isPasado = esPasado(fechaEvento);
+        
+        // Extraer la hora del evento del contenido de la tarjeta
+        const horaElement = card.querySelector('.evento-meta-item:last-child .value');
+        const horaEvento = horaElement ? horaElement.textContent.trim() : null;
+        
+        const isPasado = esPasado(fechaEvento, horaEvento);
         
         // Aplicar clase visual para eventos pasados
         if (isPasado) {
@@ -285,5 +330,80 @@ searchInput.addEventListener('input', aplicarFiltros);
 
 // Aplicar filtro inicial
 aplicarFiltros();
+
+// Detectar cuando se cierra el modal y actualizar la página si hubo cambios guardados
+window.addEventListener('eventoGuardado', function() {
+    // Recargar la página para reflejar los cambios
+    location.reload();
+});
+
+// Sistema de confirmación de eliminación personalizado
+function mostrarConfirmacionEliminar(eventoId, eventoNombre) {
+    // Crear overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-modal-overlay';
+    
+    // Crear modal
+    overlay.innerHTML = `
+        <div class="confirm-modal">
+            <div class="flex items-start gap-3 mb-4">
+                <div class="flex-shrink-0">
+                    <span class="material-symbols-outlined text-red-500 text-3xl">warning</span>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">¿Eliminar evento?</h3>
+                    <p class="text-sm text-gray-600">
+                        Estás a punto de eliminar el evento <strong>"${eventoNombre}"</strong>. 
+                        Esta acción no se puede deshacer.
+                    </p>
+                </div>
+            </div>
+            <div class="flex gap-3 justify-end">
+                <button id="btn-cancelar-eliminar" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium transition-colors">
+                    Cancelar
+                </button>
+                <button id="btn-confirmar-eliminar" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 font-medium transition-colors">
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Cerrar al hacer clic en el overlay
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            overlay.remove();
+        }
+    });
+    
+    // Botón cancelar
+    overlay.querySelector('#btn-cancelar-eliminar').addEventListener('click', () => {
+        overlay.remove();
+    });
+    
+    // Botón confirmar
+    overlay.querySelector('#btn-confirmar-eliminar').addEventListener('click', () => {
+        // Crear formulario y enviar
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/eventos/' + eventoId + '/eliminar';
+        document.body.appendChild(form);
+        form.submit();
+    });
+}
+
+// Event listeners para botones de eliminar
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.btn-delete-evento').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const eventoId = this.dataset.eventoId;
+            const eventoNombre = this.dataset.eventoNombre;
+            mostrarConfirmacionEliminar(eventoId, eventoNombre);
+        });
+    });
+});
 </script>
 {% endblock %}

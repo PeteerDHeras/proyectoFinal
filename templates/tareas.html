@@ -32,6 +32,35 @@
     body {
         font-family: 'Inter', sans-serif;
     }
+    
+    /* Modal de confirmación personalizado */
+    .confirm-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        animation: fadeIn 0.2s ease-out;
+    }
+    .confirm-modal {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        max-width: 400px;
+        width: 90%;
+        animation: slideUp 0.3s ease-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes slideUp {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
 </style>
 
 <main class="flex-1 p-8 bg-background-light text-text-light">
@@ -134,15 +163,15 @@
                     <div class="flex items-start gap-2 flex-shrink-0 sm:hidden">
                         <button data-id="{{ tarea.id }}" data-type="tarea"
                             class="btn-view-task inline-flex items-center justify-center p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100">
-                            <span class="material-symbols-outlined text-sm">visibility</span>
+                            <span class="material-symbols-outlined text-sm">edit</span>
                         </button>
                         
-                        <form method="POST" action="{{ url_for('eliminar_tarea_view', id=tarea.id) }}" class="inline-flex">
-                            <button type="submit" onclick="return confirm('¿Estás seguro de eliminar esta tarea?')"
-                                class="inline-flex items-center justify-center p-2 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50">
-                                <span class="material-symbols-outlined text-sm">delete</span>
-                            </button>
-                        </form>
+                        <button type="button"
+                                data-tarea-id="{{ tarea.id }}"
+                                data-tarea-nombre="{{ tarea.nombre }}"
+                                class="btn-delete-tarea inline-flex items-center justify-center p-2 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50">
+                            <span class="material-symbols-outlined text-sm">delete</span>
+                        </button>
                     </div>
                 </div>
 
@@ -150,19 +179,173 @@
                 <div class="hidden sm:flex items-center gap-2 flex-shrink-0">
                     <button data-id="{{ tarea.id }}" data-type="tarea"
                         class="btn-view-task inline-flex items-center justify-center p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100">
-                        <span class="material-symbols-outlined text-sm">visibility</span>
+                        <span class="material-symbols-outlined text-sm">edit</span>
                     </button>
                     
-                    <form method="POST" action="{{ url_for('eliminar_tarea_view', id=tarea.id) }}" class="inline-flex">
-                        <button type="submit" onclick="return confirm('¿Estás seguro de eliminar esta tarea?')"
-                            class="inline-flex items-center justify-center p-2 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50">
-                            <span class="material-symbols-outlined text-sm">delete</span>
-                        </button>
-                    </form>
+                    <button type="button"
+                            data-tarea-id="{{ tarea.id }}"
+                            data-tarea-nombre="{{ tarea.nombre }}"
+                            class="btn-delete-tarea inline-flex items-center justify-center p-2 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50">
+                        <span class="material-symbols-outlined text-sm">delete</span>
+                    </button>
                 </div>
             </div>
             {% endfor %}
         </div>
     </div>
 </main>
+
+<script>
+// Sistema de checkbox con actualización automática
+document.addEventListener('DOMContentLoaded', function() {
+    // Manejo de checkboxes de tareas
+    const checkboxes = document.querySelectorAll('.tarea-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const tareaId = this.dataset.tareaId;
+            
+            // Encontrar la fila más cercana (el div contenedor principal)
+            const tareaRow = this.closest('.flex.flex-col.sm\\:flex-row');
+            
+            // Encontrar h3 y p dentro de esta fila
+            const h3 = tareaRow.querySelector('h3');
+            const descripcion = tareaRow.querySelector('p');
+            const estadoBadge = tareaRow.querySelector('.inline-flex.items-center.px-2\\.5.py-0\\.5.rounded-full.text-xs.font-medium:last-of-type');
+            
+            // Aplicar estilos inmediatamente (feedback visual inmediato)
+            if (this.checked) {
+                h3?.classList.add('line-through', 'text-gray-500');
+                if (descripcion) {
+                    descripcion.classList.add('line-through');
+                }
+                // Actualizar badge de estado
+                if (estadoBadge) {
+                    estadoBadge.classList.remove('bg-gray-100', 'text-gray-800');
+                    estadoBadge.classList.add('bg-green-100', 'text-green-800');
+                    estadoBadge.textContent = 'Completada';
+                }
+            } else {
+                h3?.classList.remove('line-through', 'text-gray-500');
+                if (descripcion) {
+                    descripcion.classList.remove('line-through');
+                }
+                // Actualizar badge de estado
+                if (estadoBadge) {
+                    estadoBadge.classList.remove('bg-green-100', 'text-green-800');
+                    estadoBadge.classList.add('bg-gray-100', 'text-gray-800');
+                    estadoBadge.textContent = 'Pendiente';
+                }
+            }
+            
+            // Enviar al servidor de forma asincrónica
+            const estado = this.checked ? 1 : 0;
+            fetch(`/tareas/${tareaId}/estado`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ estado: estado })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error al actualizar el estado');
+                }
+                return response.json();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Revertir el cambio si hay error
+                if (this.checked) {
+                    h3?.classList.remove('line-through', 'text-gray-500');
+                    if (descripcion) {
+                        descripcion.classList.remove('line-through');
+                    }
+                    if (estadoBadge) {
+                        estadoBadge.classList.remove('bg-green-100', 'text-green-800');
+                        estadoBadge.classList.add('bg-gray-100', 'text-gray-800');
+                        estadoBadge.textContent = '⏳ Pendiente';
+                    }
+                    this.checked = false;
+                } else {
+                    h3?.classList.add('line-through', 'text-gray-500');
+                    if (descripcion) {
+                        descripcion.classList.add('line-through');
+                    }
+                    if (estadoBadge) {
+                        estadoBadge.classList.remove('bg-gray-100', 'text-gray-800');
+                        estadoBadge.classList.add('bg-green-100', 'text-green-800');
+                        estadoBadge.textContent = '✅ Completada';
+                    }
+                    this.checked = true;
+                }
+            });
+        });
+    });
+    
+    // Sistema de confirmación de eliminación personalizado
+    function mostrarConfirmacionEliminar(tareaId, tareaNombre) {
+        const overlay = document.createElement('div');
+        overlay.className = 'confirm-modal-overlay';
+        
+        overlay.innerHTML = `
+            <div class="confirm-modal">
+                <div class="flex items-start gap-3 mb-4">
+                    <div class="flex-shrink-0">
+                        <span class="material-symbols-outlined text-red-500 text-3xl">warning</span>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-gray-900 mb-2">¿Eliminar tarea?</h3>
+                        <p class="text-sm text-gray-600">
+                            Estás a punto de eliminar la tarea <strong>"${tareaNombre}"</strong>. 
+                            Esta acción no se puede deshacer.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex gap-3 justify-end">
+                    <button id="btn-cancelar-eliminar" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium transition-colors">
+                        Cancelar
+                    </button>
+                    <button id="btn-confirmar-eliminar" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 font-medium transition-colors">
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(overlay);
+        
+        // Cerrar al hacer clic en el overlay
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.remove();
+            }
+        });
+        
+        // Botón cancelar
+        overlay.querySelector('#btn-cancelar-eliminar').addEventListener('click', () => {
+            overlay.remove();
+        });
+        
+        // Botón confirmar
+        overlay.querySelector('#btn-confirmar-eliminar').addEventListener('click', () => {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/tareas/' + tareaId + '/eliminar';
+            document.body.appendChild(form);
+            form.submit();
+        });
+    }
+    
+    // Event listeners para botones de eliminar
+    document.querySelectorAll('.btn-delete-tarea').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tareaId = this.dataset.tareaId;
+            const tareaNombre = this.dataset.tareaNombre;
+            mostrarConfirmacionEliminar(tareaId, tareaNombre);
+        });
+    });
+});
+</script>
 {% endblock %}

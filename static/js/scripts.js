@@ -301,7 +301,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Crear nuevo evento al hacer click en un día vacío -> modal rápido
     dateClick: function(info) {
-      abrirModalCreacionRapida(info.dateStr);
+      // info.date contiene el objeto Date completo con fecha y hora
+      abrirModalCreacionRapida(info.date, info.allDay);
     },
 
     // Abrir modal de evento o tarea directamente al hacer click
@@ -351,9 +352,19 @@ document.addEventListener('DOMContentLoaded', function () {
   window.calendar = calendar;
 
   // ============== MODAL CREACIÓN RÁPIDA ==============
-  function abrirModalCreacionRapida(fechaStr) {
+  function abrirModalCreacionRapida(dateObj, isAllDay) {
     // Evitar abrir múltiples modales
     if (document.getElementById('quick-event-overlay')) return;
+
+    // Extraer fecha y hora del objeto Date
+    const yyyy = dateObj.getFullYear();
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    const hh = String(dateObj.getHours()).padStart(2, '0');
+    const mi = String(dateObj.getMinutes()).padStart(2, '0');
+    
+    const fechaStr = `${yyyy}-${mm}-${dd}`;
+    const horaStr = isAllDay ? '' : `${hh}:${mi}`;
 
     const overlay = document.createElement('div');
     overlay.id = 'quick-event-overlay';
@@ -396,8 +407,8 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Hora inicio</label>
-            <input name="hora_evento" type="time"
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Hora inicio *</label>
+            <input name="hora_evento" type="time" value="${horaStr}" required
               class="w-full rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2 text-gray-900" />
           </div>
           <div>
@@ -537,6 +548,15 @@ document.addEventListener('DOMContentLoaded', function () {
         info.revert();
         return;
       }
+    }
+
+    // Validación: la fecha no puede ser en el pasado
+    const ahora = new Date();
+    const fechaEvento = new Date(`${startParts.fecha}T${startParts.hora || '00:00'}`);
+    if (fechaEvento < ahora) {
+      showToast('La fecha no puede ser en el pasado', 'error');
+      info.revert();
+      return;
     }
 
       // Construir payload según si es tarea o evento
@@ -873,6 +893,14 @@ document.addEventListener('click', function (e) {
   // Construye payload y envía PUT request. Ahora, tras guardar siempre recargamos la vista
   // para evitar estados inconsistentes en listados (petición del usuario).
       saveBtn && saveBtn.addEventListener('click', () => {
+        // Limpiar errores previos al intentar guardar de nuevo
+        const errorContainer = overlay.querySelector('#modal-errors');
+        const errorList = overlay.querySelector('#modal-errors-list');
+        if (errorContainer && errorList) {
+          errorContainer.classList.add('hidden');
+          errorList.innerHTML = '';
+        }
+        
         const formData = new FormData(form);
         const payload = {
           nombre: formData.get('nombre') || '',
@@ -930,38 +958,158 @@ document.addEventListener('click', function (e) {
               return;
             }
             showToast('Guardado correctamente', 'success');
-            if (type === 'tarea') {
-              // Sólo recargar para tareas (solicitud usuario) para refrescar listado.
-              closeModal();
-              setTimeout(() => { location.reload(); }, 200);
-              return; // terminar flujo tras programar recarga
-            } else {
-              // Evento: mantener actualización en vivo y refrescar calendario si existe
-              if (window.calendar) {
-                try { window.calendar.refetchEvents(); } catch(e) { console.warn('No se pudo refrescar calendario', e); }
-              }
-            }
+            // Recargar página para reflejar cambios (tanto para eventos como para tareas)
+            closeModal();
+            setTimeout(() => { location.reload(); }, 200);
+            return; // terminar flujo tras programar recarga
           } catch (e) {
             console.warn('No se pudo actualizar el DOM localmente', e);
+            // Si hay error, también recargar para asegurar consistencia
+            closeModal();
+            setTimeout(() => { location.reload(); }, 200);
           }
-          closeModal();
         })
         .catch(err => {
           console.error('Error guardando', err);
-          alert((err && err.error) || 'Error al guardar el item');
+          // Mostrar error en el modal en lugar de usar alert()
+          const errorContainer = overlay.querySelector('#modal-errors');
+          const errorList = overlay.querySelector('#modal-errors-list');
+          if (errorContainer && errorList) {
+            errorList.innerHTML = '';
+            const errorMsg = (err && err.error) || 'Error al guardar el item';
+            const li = document.createElement('li');
+            li.textContent = errorMsg;
+            errorList.appendChild(li);
+            errorContainer.classList.remove('hidden');
+            // Scroll hacia arriba para mostrar el error
+            overlay.querySelector('.overflow-y-auto').scrollTop = 0;
+          } else {
+            // Fallback si no existe el contenedor de errores
+            alert(errorMsg);
+          }
         });
       });
 
       // --- BOTÓN ELIMINAR: Borrar elemento del servidor y DOM ---
       deleteBtn && deleteBtn.addEventListener('click', () => {
-        if (!confirm('¿Eliminar este elemento? Esta acción no se puede deshacer.')) return;
-        const basePath = type === 'tarea' ? 'tareas' : 'eventos';
-        fetch(`/${basePath}/${id}/eliminar`, { method: 'POST' })
-          .then(r => {
-            if (!r.ok) throw new Error('No se pudo eliminar');
-            return r.text();
-          })
-          .then(() => { 
+        const nombre = document.querySelector('#modal-form input[name="nombre"]')?.value || 'este elemento';
+        mostrarConfirmacionEliminarModal(id, nombre, type);
+      });
+      
+      function mostrarConfirmacionEliminarModal(id, nombre, type) {
+        // Crear overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-confirm-overlay';
+        overlay.style.cssText = `
+          position: fixed;
+          inset: 0;
+          background-color: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          animation: fadeIn 0.2s ease-out;
+        `;
+        
+        // Crear modal
+        const typeLabel = type === 'evento' ? 'evento' : 'tarea';
+        overlay.innerHTML = `
+          <div style="
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            max-width: 400px;
+            width: 90%;
+            animation: slideUp 0.3s ease-out;
+          ">
+            <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem; align-items: flex-start;">
+              <div style="flex-shrink: 0;">
+                <span class="material-symbols-outlined" style="color: #ef4444; font-size: 2rem;">warning</span>
+              </div>
+              <div style="flex: 1;">
+                <h3 style="font-size: 1.125rem; font-weight: bold; color: #111827; margin-bottom: 0.5rem;">¿Eliminar ${typeLabel}?</h3>
+                <p style="font-size: 0.875rem; color: #4b5563;">
+                  Estás a punto de eliminar <strong>"${nombre}"</strong>. 
+                  Esta acción no se puede deshacer.
+                </p>
+              </div>
+            </div>
+            <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+              <button id="btn-cancelar-eliminar-modal" style="
+                padding: 0.5rem 1rem;
+                border-radius: 0.5rem;
+                background-color: #e5e7eb;
+                color: #374151;
+                font-weight: 500;
+                border: none;
+                cursor: pointer;
+                transition: background-color 0.2s;
+              ">
+                Cancelar
+              </button>
+              <button id="btn-confirmar-eliminar-modal" style="
+                padding: 0.5rem 1rem;
+                border-radius: 0.5rem;
+                background-color: #ef4444;
+                color: white;
+                font-weight: 500;
+                border: none;
+                cursor: pointer;
+                transition: background-color 0.2s;
+              ">
+                Eliminar
+              </button>
+            </div>
+          </div>
+        `;
+        
+        document.body.appendChild(overlay);
+        
+        // Agregar estilos de animación si no existen
+        if (!document.getElementById('modal-confirm-styles')) {
+          const style = document.createElement('style');
+          style.id = 'modal-confirm-styles';
+          style.innerHTML = `
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            @keyframes slideUp {
+              from { transform: translateY(20px); opacity: 0; }
+              to { transform: translateY(0); opacity: 1; }
+            }
+            #btn-cancelar-eliminar-modal:hover {
+              background-color: #d1d5db;
+            }
+            #btn-confirmar-eliminar-modal:hover {
+              background-color: #dc2626;
+            }
+          `;
+          document.head.appendChild(style);
+        }
+        
+        // Cerrar al hacer clic en el overlay
+        overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) {
+            overlay.remove();
+          }
+        });
+        
+        // Botón cancelar
+        overlay.querySelector('#btn-cancelar-eliminar-modal').addEventListener('click', () => {
+          overlay.remove();
+        });
+        
+        // Botón confirmar
+        overlay.querySelector('#btn-confirmar-eliminar-modal').addEventListener('click', () => {
+          const basePath = type === 'tarea' ? 'tareas' : 'eventos';
+          fetch(`/${basePath}/${id}/eliminar`, { method: 'POST' })
+            .then(r => {
+              if (!r.ok) throw new Error('No se pudo eliminar');
+              return r.text();
+            })
+            .then(() => { 
               try {
                 removeItemFromDOM(type, id);
                 showToast('Elemento eliminado', 'success');
@@ -983,7 +1131,8 @@ document.addEventListener('click', function (e) {
               }
             })
             .catch(err => { console.error(err); alert('Error al eliminar el elemento'); });
-      });
+        });
+      }
 
       // Si el botón disparador solicitó abrir en modo edición, activar edición inmediatamente
       if (target.getAttribute && target.getAttribute('data-action') === 'edit') {

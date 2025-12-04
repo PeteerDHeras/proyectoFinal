@@ -14,6 +14,18 @@
 
     <!-- Body del Modal -->
     <div class="p-4 sm:p-6 overflow-y-auto flex-1">
+      <!-- Área de errores (oculta por defecto) -->
+      <div id="modal-errors" class="hidden bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded">
+        <div class="flex items-start">
+          <span class="material-symbols-outlined text-red-500 mr-2">error</span>
+          <div class="flex-1">
+            <h6 class="text-red-800 font-semibold text-sm mb-1">Se encontraron los siguientes errores:</h6>
+            <ul id="modal-errors-list" class="text-red-700 text-sm list-disc list-inside space-y-1">
+            </ul>
+          </div>
+        </div>
+      </div>
+      
       <form id="modal-form" class="space-y-4">
         <input type="hidden" name="id" value="{{ item.id }}" />
 
@@ -67,12 +79,13 @@
 
             <!-- Hora -->
             <div>
-              <label class="block text-xs font-medium text-gray-600 mb-1">Hora (opcional)</label>
+              <label class="block text-xs font-medium text-gray-600 mb-1">Hora {% if tipo == 'evento' %}*{% else %}(opcional){% endif %}</label>
               <input 
                 name="hora_evento" 
                 type="time" 
                 value="{{ item.hora_evento or '' }}" 
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200" 
+                {% if tipo == 'evento' %}required{% endif %}
               />
             </div>
 

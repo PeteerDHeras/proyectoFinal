@@ -56,6 +56,9 @@
             placeholder="Ingresa tu nuevo nombre de usuario"
             required
           >
+          <p class="text-xs text-gray-500 mt-1 ml-1">
+            Entre 3 y 50 caracteres, solo letras y números
+          </p>
         </div>
         <div>
           <label for="password_confirmar" class="block text-sm font-semibold text-gray-700 mb-2">
@@ -104,27 +107,68 @@
           <label for="password_nueva" class="block text-sm font-semibold text-gray-700 mb-2">
             Nueva contraseña *
           </label>
-          <input 
-            type="password" 
-            id="password_nueva" 
-            name="password_nueva" 
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
-            placeholder="Ingresa tu nueva contraseña"
-            required
-          >
+          <div class="relative">
+            <input 
+              type="password" 
+              id="password_nueva" 
+              name="password_nueva" 
+              class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+              placeholder="Ingresa tu nueva contraseña"
+              required
+            >
+            <button 
+              type="button"
+              onclick="togglePasswordVisibility('password_nueva', 'eye-nueva')"
+              class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition focus:outline-none border-0 bg-transparent cursor-pointer"
+              style="outline: none !important; box-shadow: none !important;"
+            >
+              <span id="eye-nueva" class="material-symbols-outlined text-xl">visibility</span>
+            </button>
+          </div>
+          <div class="bg-blue-50 rounded-lg p-3 mt-2">
+            <p class="text-xs text-blue-800 font-medium mb-1">Requisitos de contraseña:</p>
+            <ul class="text-xs text-blue-700 space-y-1 ml-2">
+              <li class="flex items-start">
+                <span class="material-symbols-outlined text-xs mr-1 mt-0.5">check_circle</span>
+                Mínimo 8 caracteres
+              </li>
+              <li class="flex items-start">
+                <span class="material-symbols-outlined text-xs mr-1 mt-0.5">check_circle</span>
+                Al menos 1 letra mayúscula
+              </li>
+              <li class="flex items-start">
+                <span class="material-symbols-outlined text-xs mr-1 mt-0.5">check_circle</span>
+                Al menos 1 letra minúscula
+              </li>
+              <li class="flex items-start">
+                <span class="material-symbols-outlined text-xs mr-1 mt-0.5">check_circle</span>
+                Al menos 1 número
+              </li>
+            </ul>
+          </div>
         </div>
         <div>
           <label for="password_nueva_confirmar" class="block text-sm font-semibold text-gray-700 mb-2">
             Confirmar nueva contraseña *
           </label>
-          <input 
-            type="password" 
-            id="password_nueva_confirmar" 
-            name="password_nueva_confirmar" 
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
-            placeholder="Confirma tu nueva contraseña"
-            required
-          >
+          <div class="relative">
+            <input 
+              type="password" 
+              id="password_nueva_confirmar" 
+              name="password_nueva_confirmar" 
+              class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+              placeholder="Confirma tu nueva contraseña"
+              required
+            >
+            <button 
+              type="button"
+              onclick="togglePasswordVisibility('password_nueva_confirmar', 'eye-confirmar')"
+              class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition focus:outline-none border-0 bg-transparent cursor-pointer"
+              style="outline: none !important; box-shadow: none !important;"
+            >
+              <span id="eye-confirmar" class="material-symbols-outlined text-xl">visibility</span>
+            </button>
+          </div>
         </div>
         <button 
           type="submit"
@@ -198,20 +242,20 @@
                 <td class="px-4 py-2 text-gray-900">{{ u.id }}</td>
                 <td class="px-4 py-2 font-medium text-gray-900">{{ u.usuario }}</td>
                 <td class="px-4 py-2">
-                  {% if u.rol == 3 %}
+                  {% if u.rol == 3 or u.rol == '3' %}
                   <span class="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">Admin</span>
                   {% else %}
                   <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Usuario</span>
                   {% endif %}
                 </td>
                 <td class="px-4 py-2">
-                  {% if u.rol != 3 %}
-                  <form method="POST" action="{{ url_for('eliminar_usuario_admin') }}" class="inline" onsubmit="return confirm('¿Eliminar usuario {{ u.usuario }} y todos sus eventos y tareas?')">
-                    <input type="hidden" name="usuario_id" value="{{ u.id }}">
-                    <button type="submit" class="text-red-600 hover:text-red-900">
-                      <span class="material-symbols-outlined text-sm">delete</span>
-                    </button>
-                  </form>
+                  {% if u.rol != 3 and u.rol != '3' %}
+                  <button type="button"
+                          class="btn-delete-usuario text-red-600 hover:text-red-900"
+                          data-usuario-id="{{ u.id }}"
+                          data-usuario-nombre="{{ u.usuario }}">
+                    <span class="material-symbols-outlined text-sm">delete</span>
+                  </button>
                   {% else %}
                   <span class="text-gray-400 text-xs">Protegido</span>
                   {% endif %}
@@ -255,13 +299,12 @@
                 </td>
                 <td class="px-4 py-2 text-gray-500 text-xs font-mono">{{ s.token_preview }}</td>
                 <td class="px-4 py-2">
-                  <form method="POST" action="{{ url_for('cerrar_sesion_usuario_admin') }}" class="inline" onsubmit="return confirm('¿Cerrar sesión de {{ s.usuario }}?')">
-                    <input type="hidden" name="usuario" value="{{ s.usuario }}">
-                    <button type="submit" class="text-red-600 hover:text-red-900 flex items-center gap-1 text-xs">
-                      <span class="material-symbols-outlined text-sm">logout</span>
-                      <span>Cerrar</span>
-                    </button>
-                  </form>
+                  <button type="button"
+                          class="btn-cerrar-sesion text-red-600 hover:text-red-900 flex items-center gap-1 text-xs"
+                          data-usuario="{{ s.usuario }}">
+                    <span class="material-symbols-outlined text-sm">logout</span>
+                    <span>Cerrar</span>
+                  </button>
                 </td>
               </tr>
               {% else %}
@@ -304,12 +347,12 @@
                 <td class="px-4 py-2 text-gray-600">{{ e.fecha_evento }}</td>
                 <td class="px-4 py-2 text-gray-600">{{ e.creador_nombre }}</td>
                 <td class="px-4 py-2">
-                  <form method="POST" action="{{ url_for('eliminar_evento_admin') }}" class="inline" onsubmit="return confirm('¿Eliminar evento?')">
-                    <input type="hidden" name="evento_id" value="{{ e.id }}">
-                    <button type="submit" class="text-red-600 hover:text-red-900">
-                      <span class="material-symbols-outlined text-sm">delete</span>
-                    </button>
-                  </form>
+                  <button type="button"
+                          class="btn-delete-evento-admin text-red-600 hover:text-red-900"
+                          data-evento-id="{{ e.id }}"
+                          data-evento-nombre="{{ e.nombre }}">
+                    <span class="material-symbols-outlined text-sm">delete</span>
+                  </button>
                 </td>
               </tr>
               {% else %}
@@ -360,12 +403,12 @@
                 </td>
                 <td class="px-4 py-2 text-gray-600">{{ t.creador_nombre }}</td>
                 <td class="px-4 py-2">
-                  <form method="POST" action="{{ url_for('eliminar_tarea_admin') }}" class="inline" onsubmit="return confirm('¿Eliminar tarea?')">
-                    <input type="hidden" name="tarea_id" value="{{ t.id }}">
-                    <button type="submit" class="text-red-600 hover:text-red-900">
-                      <span class="material-symbols-outlined text-sm">delete</span>
-                    </button>
-                  </form>
+                  <button type="button"
+                          class="btn-delete-tarea-admin text-red-600 hover:text-red-900"
+                          data-tarea-id="{{ t.id }}"
+                          data-tarea-nombre="{{ t.nombre }}">
+                    <span class="material-symbols-outlined text-sm">delete</span>
+                  </button>
                 </td>
               </tr>
               {% else %}
@@ -379,7 +422,7 @@
       <!-- Panel: Limpieza -->
       <div id="admin-panel-limpieza" class="admin-tab-content hidden">
         <p class="text-gray-600 mb-4">Elimina eventos y tareas cuya fecha haya pasado hace más de X días.</p>
-        <form method="POST" action="{{ url_for('limpiar_datos_admin') }}" onsubmit="return confirm('¿Confirmar limpieza de datos antiguos?')" class="space-y-4">
+        <form method="POST" action="{{ url_for('limpiar_datos_admin') }}" class="space-y-4" id="form-limpieza-usuario">
           <div>
             <label for="dias" class="block text-sm font-medium text-gray-700 mb-2">
               Eliminar datos con más de (días):
@@ -396,7 +439,8 @@
           </div>
           <div class="flex justify-end">
             <button 
-              type="submit"
+              type="button"
+              id="btn-confirmar-limpieza-usuario"
               class="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-semibold text-sm shadow-sm"
             >
               <span class="material-symbols-outlined text-base">delete_sweep</span>
@@ -409,6 +453,36 @@
         </div>
       </div>
     </div>
+
+    <style>
+    .confirm-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        animation: fadeIn 0.2s ease-out;
+    }
+    .confirm-modal {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        max-width: 400px;
+        width: 90%;
+        animation: slideUp 0.3s ease-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes slideUp {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    </style>
 
     <script>
     function showAdminTab(tabName) {
@@ -473,8 +547,165 @@
         noTareasRow.style.display = visibleCount === 0 ? '' : 'none';
       }
     }
+    
+    function mostrarConfirmacion(tipo, id, nombre, action) {
+      const overlay = document.createElement('div');
+      overlay.className = 'confirm-modal-overlay';
+      
+      let mensaje = '';
+      let tituloTipo = '';
+      
+      if (tipo === 'usuario') {
+          tituloTipo = 'usuario';
+          mensaje = `Estás a punto de eliminar al usuario <strong>"${nombre}"</strong> y todos sus eventos y tareas. Esta acción no se puede deshacer.`;
+      } else if (tipo === 'evento') {
+          tituloTipo = 'evento';
+          mensaje = `Estás a punto de eliminar el evento <strong>"${nombre}"</strong>. Esta acción no se puede deshacer.`;
+      } else if (tipo === 'tarea') {
+          tituloTipo = 'tarea';
+          mensaje = `Estás a punto de eliminar la tarea <strong>"${nombre}"</strong>. Esta acción no se puede deshacer.`;
+      } else if (tipo === 'sesion') {
+          tituloTipo = 'cerrar sesión';
+          mensaje = `Estás a punto de cerrar la sesión de <strong>"${nombre}"</strong>. El usuario deberá iniciar sesión nuevamente.`;
+      } else if (tipo === 'limpieza') {
+          tituloTipo = 'limpieza de datos';
+          mensaje = `Estás a punto de ejecutar la limpieza de datos antiguos. Esta acción eliminará permanentemente eventos y tareas antiguas y no se puede deshacer.`;
+      }
+      
+      overlay.innerHTML = `
+          <div class="confirm-modal">
+              <div class="flex items-start gap-3 mb-4">
+                  <div class="flex-shrink-0">
+                      <span class="material-symbols-outlined text-red-500 text-3xl">warning</span>
+                  </div>
+                  <div class="flex-1">
+                      <h3 class="text-lg font-bold text-gray-900 mb-2">¿Confirmar ${tituloTipo}?</h3>
+                      <p class="text-sm text-gray-600">${mensaje}</p>
+                  </div>
+              </div>
+              <div class="flex gap-3 justify-end">
+                  <button id="btn-cancelar" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium transition-colors">
+                      Cancelar
+                  </button>
+                  <button id="btn-confirmar" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 font-medium transition-colors">
+                      Confirmar
+                  </button>
+              </div>
+          </div>
+      `;
+      
+      document.body.appendChild(overlay);
+      
+      overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) overlay.remove();
+      });
+      
+      overlay.querySelector('#btn-cancelar').addEventListener('click', () => overlay.remove());
+      
+      overlay.querySelector('#btn-confirmar').addEventListener('click', () => {
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = action;
+          
+          if (tipo === 'usuario') {
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = 'usuario_id';
+              input.value = id;
+              form.appendChild(input);
+          } else if (tipo === 'evento') {
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = 'evento_id';
+              input.value = id;
+              form.appendChild(input);
+          } else if (tipo === 'tarea') {
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = 'tarea_id';
+              input.value = id;
+              form.appendChild(input);
+          } else if (tipo === 'sesion') {
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = 'usuario';
+              input.value = nombre;
+              form.appendChild(input);
+          } else if (tipo === 'limpieza') {
+              const diasInput = document.createElement('input');
+              diasInput.type = 'hidden';
+              diasInput.name = 'dias';
+              diasInput.value = document.getElementById('dias').value;
+              form.appendChild(diasInput);
+          }
+          
+          document.body.appendChild(form);
+          form.submit();
+      });
+    }
+    
+    // Event listeners para botones de eliminar
+    document.addEventListener('DOMContentLoaded', function() {
+        // Eliminar usuarios
+        document.querySelectorAll('.btn-delete-usuario').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.usuarioId;
+                const nombre = this.dataset.usuarioNombre;
+                mostrarConfirmacion('usuario', id, nombre, '{{ url_for("eliminar_usuario_admin") }}');
+            });
+        });
+        
+        // Cerrar sesiones
+        document.querySelectorAll('.btn-cerrar-sesion').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const usuario = this.dataset.usuario;
+                mostrarConfirmacion('sesion', null, usuario, '{{ url_for("cerrar_sesion_usuario_admin") }}');
+            });
+        });
+        
+        // Eliminar eventos
+        document.querySelectorAll('.btn-delete-evento-admin').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.eventoId;
+                const nombre = this.dataset.eventoNombre;
+                mostrarConfirmacion('evento', id, nombre, '{{ url_for("eliminar_evento_admin") }}');
+            });
+        });
+        
+        // Eliminar tareas
+        document.querySelectorAll('.btn-delete-tarea-admin').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.tareaId;
+                const nombre = this.dataset.tareaNombre;
+                mostrarConfirmacion('tarea', id, nombre, '{{ url_for("eliminar_tarea_admin") }}');
+            });
+        });
+        
+        // Limpieza de datos
+        const btnLimpieza = document.getElementById('btn-confirmar-limpieza-usuario');
+        if (btnLimpieza) {
+            btnLimpieza.addEventListener('click', function() {
+                mostrarConfirmacion('limpieza', null, null, '{{ url_for("limpiar_datos_admin") }}');
+            });
+        }
+    });
     </script>
     {% endif %}
+
+    <script>
+    function togglePasswordVisibility(inputId, eyeId) {
+        const input = document.getElementById(inputId);
+        const eye = document.getElementById(eyeId);
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            eye.textContent = 'visibility_off';
+        } else {
+            input.type = 'password';
+            eye.textContent = 'visibility';
+        }
+    }
+    </script>
 
     <!-- Botón volver -->
     <div class="text-center">

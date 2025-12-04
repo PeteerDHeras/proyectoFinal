@@ -591,10 +591,10 @@ def obtener_eventos_semana(usuario_id=None):
     return cantidad
 
 def obtener_usuarios():
-    """Devuelve la lista de usuarios (id y nombre) para el admin."""
+    """Devuelve la lista de usuarios (id, nombre y rol) para el admin."""
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT id, usuario FROM usuario ORDER BY usuario ASC")
+    cursor.execute("SELECT id, usuario, rol FROM usuario ORDER BY usuario ASC")
     usuarios = cursor.fetchall()
     conn.close()
     return usuarios

@@ -79,6 +79,14 @@
                                 <span>Tareas</span>
                             </a>
                         </li>
+                        {% if session.get('usuario') %}
+                        <div class="mt-3">
+                            <a href="{{ url_for('ajustes_usuario') }}" class="btn btn-outline-light w-100 d-flex align-items-center justify-content-center gap-2">
+                                <span class="material-symbols-outlined" style="font-size: 20px;">settings</span>
+                                <span>Ajustes</span>
+                            </a>
+                        </div>
+                        {% endif %}
                         <!-- Iniciar/Cerrar sesión -->
                         <li class="nav-item mt-3">
                             {% if session.get('usuario') %}
@@ -108,14 +116,7 @@
                                 <a href="{{ url_for('contacto') }}" class="text-light" style="text-decoration: none;">Contacto</a>
                             </div>
                         </div>
-                        {% if session.get('usuario') %}
-                        <div class="mt-3">
-                            <a href="{{ url_for('ajustes_usuario') }}" class="btn btn-outline-light w-100 d-flex align-items-center justify-content-center gap-2">
-                                <span class="material-symbols-outlined" style="font-size: 20px;">settings</span>
-                                <span>Ajustes</span>
-                            </a>
-                        </div>
-                        {% endif %}
+                        
                     </footer>
                 </nav>
             </div>
@@ -199,66 +200,6 @@
                 }
             });
         });
-
-
-        // Mini calendario
-        let currentDate = new Date();
-        
-        function renderCalendar() {
-            const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                              'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-            // Cambiado para empezar en Lunes
-            const dayNames = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-            
-            const month = currentDate.getMonth();
-            const year = currentDate.getFullYear();
-            const today = new Date();
-            
-            document.getElementById('calendarMonth').textContent = monthNames[month] + ' ' + year;
-            
-            // Obtener primer día del mes (0=Domingo, 1=Lunes, etc.)
-            let firstDay = new Date(year, month, 1).getDay();
-            // Ajustar para que Lunes sea 0 en lugar de Domingo
-            firstDay = (firstDay === 0) ? 6 : firstDay - 1;
-            
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            
-            let html = '';
-            
-            // Nombres de días
-            dayNames.forEach(day => {
-                html += `<div class="text-center text-muted fw-semibold" style="font-size: 0.65rem;">${day}</div>`;
-            });
-            
-            // Espacios vacíos antes del primer día
-            for (let i = 0; i < firstDay; i++) {
-                html += '<div></div>';
-            }
-            
-            // Días del mes
-            for (let day = 1; day <= daysInMonth; day++) {
-                const isToday = day === today.getDate() && 
-                               month === today.getMonth() && 
-                               year === today.getFullYear();
-                
-                if (isToday) {
-                    html += `<div class="text-center" style="padding: 1px; aspect-ratio: 1; font-size: 0.65rem; display: flex; align-items: center; justify-content: center;">
-                        <span class="bg-primary text-white rounded-circle" style="width: 85%; height: 85%; display: flex; align-items: center; justify-content: center;">${day}</span>
-                    </div>`;
-                } else {
-                    html += `<div class="text-center text-light" style="padding: 1px; aspect-ratio: 1; font-size: 0.65rem; display: flex; align-items: center; justify-content: center;">${day}</div>`;
-                }
-            }
-            
-            document.getElementById('calendarDays').innerHTML = html;
-        }
-        
-        window.changeMonth = function(delta) {
-            currentDate.setMonth(currentDate.getMonth() + delta);
-            renderCalendar();
-        };
-        
-        renderCalendar();
     });
     </script>
 

@@ -349,13 +349,6 @@ def dashboard():
         if inicio_semana <= fecha_e <= fin_semana:
             eventos_semana.append(e)
 
-    # Ordenar eventos de la semana por fecha y hora
-    def _clave_orden(ev):
-        f = ev.get('fecha_evento') or ev.get('fecha_limite') or '2099-12-31'
-        h = ev.get('hora_evento') or ev.get('hora_fin') or '23:59'
-        return (f, h)
-    eventos_semana = sorted(eventos_semana, key=_clave_orden)
-
     # Etiquetas humanizadas para las fechas de la semana
     hoy = fecha_hoy
     manana = hoy + timedelta(days=1)
@@ -408,6 +401,20 @@ def ver_eventos():
     user = obtener_usuario_por_nombre(usuario_actual)
     usuario_id = user['id'] if user else None
     eventos = obtener_eventos(usuario_id)
+    
+    # Ordenar eventos por fecha y hora
+    def _clave_orden(ev):
+        f = ev.get('fecha_evento', '2099-12-31')
+        h = ev.get('hora_evento')
+        # Convertir hora a string si es necesario
+        if h:
+            h_str = str(h) if not isinstance(h, str) else h
+        else:
+            h_str = '23:59'
+        return (f, h_str)
+    
+    eventos = sorted(eventos, key=_clave_orden)
+    
     return render_template('eventos.html', eventos=eventos)
 
 
@@ -442,9 +449,7 @@ def crear_evento_view():
             errors.append('Longitud de nombre inválida (3-100)')
         if not validar_texto_seguro(nombre, 100, required=True):
             errors.append('Nombre inválido o demasiado largo')
-        if not validar_fecha_no_pasada(fecha_evento):
-            errors.append('La fecha del evento no puede ser en el pasado')
-        if hora_evento_raw and not validar_fecha_hora_no_pasada(fecha_evento, hora_evento):
+        if not validar_fecha_hora_no_pasada(fecha_evento, hora_evento):
             errors.append('No se puede crear un evento con fecha y hora pasadas')
         if hora_fin and not validar_rango_horas(hora_evento[:5], hora_fin[:5]):
             errors.append('La hora fin debe ser posterior a la hora inicio')
@@ -900,13 +905,10 @@ def crear_evento_api():
     if not validar_fecha_formato(fecha_evento):
         print("[DEBUG] Fecha inválida", fecha_evento)
         return jsonify({'error': 'Fecha inválida'}), 400
-    if not validar_fecha_no_pasada(fecha_evento):
-        print("[DEBUG] Fecha pasada", fecha_evento)
-        return jsonify({'error': 'Fecha debe ser hoy o futura'}), 400
     # Validar que la fecha y hora no sean del pasado
-    if data.get('hora_evento') and not validar_fecha_hora_no_pasada(fecha_evento, hora_evento):
+    if not validar_fecha_hora_no_pasada(fecha_evento, hora_evento):
         print("[DEBUG] Fecha y hora pasadas", fecha_evento, hora_evento)
-        return jsonify({'error': 'No se puede crear un evento con fecha y hora pasadas'}), 400
+        return jsonify({'error': 'El evento debe tener fecha y hora posteriores a ahora'}), 400
     if hora_evento and not validar_hora_formato(hora_evento):
         print("[DEBUG] Hora inválida", hora_evento)
         return jsonify({'error': 'Hora inválida'}), 400
@@ -915,13 +917,13 @@ def crear_evento_api():
         return jsonify({'error': 'Fecha fin inválida'}), 400
     if fecha_fin and not validar_fechas(fecha_evento, fecha_fin):
         print("[DEBUG] Rango fecha inválido", fecha_evento, fecha_fin)
-        return jsonify({'error': 'Fecha fin debe ser posterior a inicio'}), 400
+        return jsonify({'error': 'Inicio de evento debe ser anterior a final evento'}), 400
     if hora_fin and not validar_hora_formato(hora_fin):
         print("[DEBUG] Hora fin inválida", hora_fin)
         return jsonify({'error': 'Hora fin inválida'}), 400
     if hora_fin and not validar_rango_horas(hora_evento, hora_fin):
         print("[DEBUG] Rango hora inválido", hora_evento, hora_fin)
-        return jsonify({'error': 'Hora fin debe ser posterior a hora inicio'}), 400
+        return jsonify({'error': 'Hora final de evento debe ser posterior a hora inicio'}), 400
     if descripcion and not validar_texto_seguro(descripcion, 500, required=False):
         print("[DEBUG] Descripción inválida", descripcion)
         return jsonify({'error': 'Descripción inválida'}), 400
@@ -1003,8 +1005,9 @@ def actualizar_tarea_api(tarea_id):
     # Validar fecha
     if not validar_fecha_formato(fecha_limite):
         return jsonify({'error': 'Fecha límite inválida'}), 400
-    # Relajamos la validación para permitir mover tareas a días pasados vía drag & drop
-    # (Se mantiene sólo el formato correcto y se deja decisión de negocio a otra capa si hiciera falta)
+    # Validar que la fecha no sea en el pasado
+    if not validar_fecha_no_pasada(fecha_limite):
+        return jsonify({'error': 'La fecha límite no puede ser en el pasado'}), 400
 
 
     # Validar prioridad
@@ -1273,20 +1276,21 @@ def cambiar_nombre_usuario():
     """Cambiar el nombre de usuario actual."""
     from db import obtener_usuario_por_nombre
     import bcrypt
+    import re
     
     usuario_actual = session.get('usuario')
-    nuevo_nombre = request.form.get('nuevo_nombre', '').strip()
+    nuevo_nombre = sanitizar_texto(request.form.get('nuevo_nombre', ''))
     password_confirmar = request.form.get('password_confirmar', '').strip()
     
     errors = []
     
-    # Validaciones
+    # Validaciones (mismas que en registro)
     if not validar_no_vacio(nuevo_nombre):
         errors.append('El nuevo nombre no puede estar vacío')
     if not validar_longitud(nuevo_nombre, 50, 3):
         errors.append('El nombre debe tener entre 3 y 50 caracteres')
-    if not validar_texto_seguro(nuevo_nombre, 50, required=True):
-        errors.append('El nombre contiene caracteres no permitidos')
+    if not re.match(r'^[a-zA-Z0-9]+$', nuevo_nombre):
+        errors.append('El usuario solo puede contener letras y números')
     
     # Verificar que el nuevo nombre no exista
     user_existente = obtener_usuario_por_nombre(nuevo_nombre)
@@ -1347,11 +1351,15 @@ def cambiar_password():
     """Cambiar la contraseña del usuario actual."""
     from db import obtener_usuario_por_nombre, get_connection
     import bcrypt
+    import re
     
     usuario_actual = session.get('usuario')
     password_actual = request.form.get('password_actual', '').strip()
     password_nueva = request.form.get('password_nueva', '').strip()
     password_nueva_confirmar = request.form.get('password_nueva_confirmar', '').strip()
+    
+    # Patrón de contraseña (mismo que en registro): min 8, mayúscula, minúscula y número
+    patron_password = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$'
     
     errors = []
     
@@ -1360,8 +1368,8 @@ def cambiar_password():
         errors.append('Debes ingresar tu contraseña actual')
     if not validar_no_vacio(password_nueva):
         errors.append('La nueva contraseña no puede estar vacía')
-    if not validar_longitud(password_nueva, 100, 6):
-        errors.append('La nueva contraseña debe tener entre 6 y 100 caracteres')
+    if not re.match(patron_password, password_nueva):
+        errors.append('La contraseña debe tener mínimo 8 caracteres, incluir mayúscula, minúscula y número')
     if password_nueva != password_nueva_confirmar:
         errors.append('Las contraseñas nuevas no coinciden')
     
